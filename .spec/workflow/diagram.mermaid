@@ -1,0 +1,76 @@
+flowchart TD
+    START([Inicio]) --> CREATE[Crear Tarea]
+    CREATE --> ASIGNADA[ASIGNADA]
+    
+    ASIGNADA --> ASIG_ACTIONS{Acciones}
+    ASIG_ACTIONS -->|Administración| ADD_WO[Asignar WO]
+    ASIG_ACTIONS -->|Inspector/Supervisor| REASSIGN[Reasignar]
+    ASIG_ACTIONS -->|Proveedor| PROGRESS[Iniciar Trabajo]
+    
+    ADD_WO --> ASIGNADA
+    REASSIGN --> ASIGNADA
+    PROGRESS --> EN_PROGRESO[EN PROGRESO]
+    
+    EN_PROGRESO --> PROG_ACTIONS{Acciones}
+    PROG_ACTIONS -->|Administración| ADD_WO2[Asignar WO]
+    PROG_ACTIONS -->|Proveedor con WO| CERTIFICAR[Proveedor Emite Certificado]
+    PROG_ACTIONS -->|Proveedor sin WO| ALERT[Alertar Admin - Falta WO]
+    
+    ADD_WO2 --> EN_PROGRESO
+    ALERT --> EN_PROGRESO
+    CERTIFICAR --> PEND_CERT[PENDIENTE CERTIFICACIÓN]
+    
+    PEND_CERT --> CERT_ACTIONS{Inspector/Supervisor Revisa}
+    CERT_ACTIONS -->|Aprobar sin cambios| CHECK_SUP{¿Requiere Supervisor?}
+    CERT_ACTIONS -->|Editar certificado| EDIT[Inspector Edita Certificado]
+    CERT_ACTIONS -->|Observar| OBSERVADO[OBSERVADO]
+    
+    EDIT --> PEND_EDIT[PENDIENTE APROBACIÓN CON EDICIÓN]
+    PEND_EDIT --> PROV_VALID{Proveedor Valida Edición}
+    PROV_VALID -->|Acepta| PEND_ADMIN[PENDIENTE ADMINISTRACIÓN]
+    PROV_VALID -->|Rechaza| PEND_CERT
+    
+    OBSERVADO --> OBS_ACTIONS{Proveedor}
+    OBS_ACTIONS -->|Corregir| PEND_CERT
+    OBS_ACTIONS -->|Cancelar| CANCELADA[CANCELADA]
+    OBS_ACTIONS -->|Rehacer| EN_PROGRESO
+    
+    CHECK_SUP -->|Sí - Inspector| PEND_SUP[PENDIENTE SUPERVISOR]
+    CHECK_SUP -->|No - Sup Disp/Sop/Prov| PEND_ADMIN
+    
+    PEND_SUP --> SUP_ACTIONS{Supervisor Mantenimiento}
+    SUP_ACTIONS -->|Aprobar| PEND_ADMIN
+    SUP_ACTIONS -->|Observar| PEND_CERT
+    
+    PEND_ADMIN --> ADMIN_ACTIONS{Administración}
+    ADMIN_ACTIONS -->|Aprobar| CHECK_GER{¿Requiere Gerente?}
+    ADMIN_ACTIONS -->|Observar| BACK_PREV[Volver Estado Anterior]
+    
+    BACK_PREV --> PEND_CERT
+    BACK_PREV --> PEND_SUP
+    
+    CHECK_GER -->|Sí| PEND_GER[PENDIENTE GERENTE]
+    CHECK_GER -->|No| PEND_CERCO[PENDIENTE CERCO]
+    
+    PEND_GER --> GER_ACTIONS{Gerente}
+    GER_ACTIONS -->|Aprobar| PEND_CERCO
+    GER_ACTIONS -->|Observar| PEND_ADMIN
+    
+    PEND_CERCO --> CERCO_ACTIONS{CERCO}
+    CERCO_ACTIONS -->|Aprobar| FINALIZADA[FINALIZADA]
+    CERCO_ACTIONS -->|Observar| PEND_ADMIN
+    
+    FINALIZADA --> END[Cronología Completa]
+    CANCELADA --> END
+    
+    classDef inicial fill:#e3f2fd
+    classDef proceso fill:#f3e5f5
+    classDef decision fill:#fff3e0
+    classDef final fill:#e8f5e8
+    classDef especial fill:#fce4ec
+    
+    class START,CREATE inicial
+    class ASIGNADA,EN_PROGRESO,PEND_CERT,PEND_SUP,PEND_ADMIN,PEND_GER,PEND_CERCO proceso
+    class ASIG_ACTIONS,PROG_ACTIONS,CERT_ACTIONS,CHECK_SUP,SUP_ACTIONS,ADMIN_ACTIONS,CHECK_GER,GER_ACTIONS,CERCO_ACTIONS,PROV_VALID,OBS_ACTIONS decision
+    class FINALIZADA,CANCELADA,END final
+    class PEND_EDIT,OBSERVADO especial
