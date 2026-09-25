@@ -1,60 +1,95 @@
-# 06 — Catálogos
+# 06 — Catálogos y datos maestros
 
-Todos los catálogos siguen la misma regla: **nada se sobrescribe**. Un cambio crea un registro nuevo con **vigencia desde**, y el anterior queda con su vigencia hasta. Así cualquier certificado se puede reconstruir con los datos que regían ese día.
+Regla general: **nada se sobrescribe**. Cada cambio queda con **vigencia desde** y el anterior se conserva, para reconstruir cualquier certificado con los datos de su momento.
 
-## Códigos de mano de obra (dueño: Compras)
+## LPU — Lista de Precios Unitarios (dueño: Compras)
+
+Es el catálogo de **códigos de mano de obra y sus precios**. Hoy llega como Excel "cada tanto", sin frecuencia fija.
+
+### Código de mano de obra
 
 | Campo | Nota |
 |---|---|
-| Código | Único |
-| Descripción corta | |
-| **Alcance** | Texto largo: qué incluye y qué no. Se muestra al certificar y al aprobar |
-| Unidad | Hora, unidad, metro, global, etc. |
-| Categoría / especialidad | Eléctrico, civil, etc. |
-| Tipos de tarea aplicables | Mantenimiento / Eventos / Obra |
-| **Requiere 2da aprobación** | Sí/No — con vigencia |
+| **Código S4** | Identificador canónico (ej. 5022316) |
+| Alias | Código (99xxxxxxx), ex-Teco, ex-Cable, código R (ZCIE). Todos buscables |
+| Descripción | |
+| **Alcance** | Qué incluye y qué no. Se muestra al certificar y al aprobar |
+| Unidad | UN, M, M2, M3, KM, MZA, H, **AD** (monto abierto), etc. |
+| Categoría | Mantenimiento, Civil, RD, FO, CAB, Adicional, Proyectos, Eventos… |
+| **Requiere 2da aprobación** | Sí/No, con vigencia |
+| **Monto abierto** | Si la unidad es AD: el importe lo carga el contratista |
+| **Requiere factura adjunta** | Ej. Recursos solicitados |
 | Activo | Dar de baja no afecta certificados existentes |
 
-## Preciario (dueño: Compras)
+### Versión de LPU
 
-- Una **lista de precios** tiene nombre, vigencia desde/hasta y estado (borrador → publicada).
-- Contiene un precio por código de MO.
-- Se publica completa: al publicar la nueva, la anterior se cierra automáticamente.
-- Se puede preparar en borrador y programar su vigencia.
-- Opcional (ver 09): precios diferenciados por contrato, contratista o zona.
+- Nombre, **fecha de vigencia**, % de actualización informado, archivo original.
+- Un precio por código y por **lista de precio**: hoy **Mantenimiento** y **Obras** (y Eventos, a confirmar). El modelo admite más listas (ej. por zona) sin cambios.
+- Precio 0 o vacío = **el código no aplica** a ese tipo de trabajo.
+- Ciclo: **borrador → publicada**. Al publicarla:
+  1. Se cierra la anterior.
+  2. Se **revalorizan** los certificados no cerrados (ver 03 §5).
+  3. Se notifica a contratistas y aprobadores con un resumen del impacto.
 
-## Materiales
+### Importación de la LPU
+
+Se importa **el mismo Excel que manda Compras** (hoja Maestro/LPU: categoría, código, alias, S4, descripción, unidad, $ Mantenimiento, $ Obras, vigencia):
+
+1. Subir el archivo.
+2. **Vista previa del cambio**: códigos nuevos, dados de baja, cambios de descripción y de unidad, variación de precio por código (y promedio contra el % informado), errores (códigos duplicados, unidades desconocidas).
+3. Confirmar y publicar (o dejar en borrador con vigencia futura).
+
+## Materiales (SAP)
 
 | Campo | Nota |
 |---|---|
-| Código de material (SAP) | Único |
-| Descripción | |
+| **Código SAP (ID nuevo)** | Canónico |
+| Códigos anteriores | Tabla de equivalencias (el Excel de obras trae ~45.000) |
+| Texto breve, descripción | |
+| Marca, grupo de artículo, tipo, subtipo | Para filtrar |
 | Unidad de medida | |
-| Recuperable | Si puede aparecer como recuperado |
+| Recuperable | |
+| Precio de referencia | Opcional, para el valorizado |
 | Activo | |
 
-El **stock** vive en SAP. En el MVP el sistema no lleva stock propio; como mucho puede mostrar un stock informativo importado.
+~31.000 materiales. Carga inicial desde la planilla actual; después, importación periódica desde SAP. El **stock** sigue en SAP.
 
-## Imputaciones (OT / códigos de imputación)
+## Imputaciones
 
-| Campo | Nota |
+Tres tipos, todos elegibles por el solicitante:
+
+| Tipo | Origen | Particularidad |
+|---|---|---|
+| **WO (Work Order)** | Sistema **Helix** | Se asigna manualmente a cada tarea |
+| **PEP / elemento de imputación** | SAP | Partida con **presupuesto** asignado a una obra, que se va consumiendo |
+| **Orden de controlling (CO)** | SAP | Similar a la anterior |
+
+- Las de SAP se importan periódicamente (Excel/CSV al inicio, integración más adelante).
+- Para los PEP, si se importa el **presupuesto**, el sistema muestra **consumido / comprometido / disponible** según los certificados (ver 08).
+- Las WO de Helix se cargan a mano en la tarea (validando el formato) o se importan si Helix lo permite.
+- Los proyectos de obra (ARATO-xxxxx) se relacionan con su PEP.
+
+## Organización
+
+| Catálogo | Contenido inicial |
 |---|---|
-| Número | OT o código |
-| Tipo | OT / código de imputación |
-| Descripción | |
-| Tipos de tarea permitidos | Opcional |
-| Región / área | Opcional, para filtrar lo que ve el contratista |
-| Vigente | Solo las vigentes pueden elegirse |
+| Regiones | AMBA, Litoral, Mediterránea, PBA y Patagonia |
+| Subregiones | ~16 |
+| Bases / nodos / localidades | ~160, cada una en una subregión |
+| Contratistas | ~260 (razón social, CUIT, subregiones habilitadas, usuarios) |
+| Centros y almacenes SAP | Por subregión |
+| Tipos de trabajo y subtipos | Obra / Mantenimiento (correctivo, preventivo, siniestro, edificios, edificios orden real) / Eventos |
+| Tipos de red | BBI, CU, FO, FTTH, HFC |
+| Proyectos de obra | Código + nombre + PEP |
 
-## Importación masiva
+## Campos adicionales por tipo de trabajo
 
-Compras y Administración trabajan en Excel. Para cada catálogo:
+Definibles por un administrador: nombre, tipo (texto, número, fecha, lista), obligatoriedad, validación (ej. siniestro = 12 caracteres), en qué tipo/subtipo aplica. Así la carátula se adapta sin programar.
 
-1. Subir Excel/CSV con formato definido (plantilla descargable).
-2. El sistema muestra una **vista previa del cambio**: altas, bajas, modificaciones, errores.
-3. Confirmar con fecha de vigencia.
-4. Todo queda auditado (quién importó, archivo original guardado).
+## Importación genérica
 
-## Integración futura con SAP
+Todos los catálogos se pueden importar desde Excel/CSV con plantilla descargable, **vista previa del cambio**, confirmación con vigencia y auditoría (se guarda el archivo original).
 
-Diseñado para que más adelante materiales, imputaciones/OT y consumos se sincronicen con SAP sin cambiar el modelo: cada catálogo guarda su **origen** (manual, importación, SAP) y el identificador externo.
+## Integraciones futuras
+
+Cada registro guarda su **origen** (manual, importación, SAP, Helix) y su ID externo, para sincronizar más adelante sin cambiar el modelo.

@@ -9,7 +9,9 @@ Objetivo: ante cualquier controversia, poder reconstruir **quién hizo qué, cu�
 - Tareas: alta, cada campo modificado, asignaciones, reasignaciones, cambios de estado, comentarios.
 - Certificados: cada ítem agregado/modificado/quitado en borrador, emisión, cada aprobación, observación, rechazo, reenvío, anulación.
 - Documentos: subida, reemplazo (con hash de ambos archivos), descarga de documentos sensibles.
-- Catálogos y preciarios: cada alta, cambio y publicación.
+- Catálogos y LPU: cada alta, cambio, importación (con el archivo original) y publicación.
+- Revalorizaciones de certificados por LPU y congelamiento de precios en la liquidación.
+- Cambios de imputación.
 - Flujos y parámetros: cada versión publicada.
 - Usuarios, roles, delegaciones, reasignaciones de pools.
 - Accesos: inicio de sesión, intentos fallidos, exportaciones.

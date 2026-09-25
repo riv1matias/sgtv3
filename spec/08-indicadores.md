@@ -7,9 +7,12 @@ Objetivo: que **personal propio y contratistas vean los mismos números**, calcu
 **Financiero**
 - Monto certificado por período (emitido).
 - Monto **en aprobación**, desglosado por paso (cuánto está en el solicitante, en el gerente, en administración, en CERCO).
-- Monto **aprobado para pago** por período.
+- Monto **aprobado para pago** y **liquidado/cerrado** por período.
+- **Importe a la emisión vs. importe final pagado**: cuánto sumó la actualización de LPU, por certificado y por período.
+- Montos abiertos (costo mínimo diario, adicionales, recursos solicitados) y su peso sobre el total.
 - Monto observado/rechazado y retrabajo (versiones adicionales).
-- Composición por código de MO, por tipo de tarea, por imputación.
+- Composición por código de MO, por categoría, por tipo de trabajo, por subregión.
+- Por tarea con varios certificados: certificado acumulado, avances emitidos vs. previstos.
 - Antigüedad de lo pendiente (0–15, 15–30, 30–60, +60 días).
 
 **Tiempos**
@@ -24,11 +27,13 @@ Objetivo: que **personal propio y contratistas vean los mismos números**, calcu
 
 ## Para personal propio
 
-- Todo lo anterior, por contratista, región, área, tipo de tarea, imputación.
+- Todo lo anterior, por contratista, región, subregión, base, tipo de trabajo e imputación. **Cada usuario ve lo de su rango y sus subregiones**; CERCO ve el país.
 - **Cuellos de botella**: tiempo promedio y pendientes por paso y por persona/pool.
 - Ranking y comparación de contratistas (tiempos, calidad, montos).
-- Gasto en MO por imputación/OT y período; materiales consumidos y recuperados.
-- Evolución de precios del preciario y su impacto.
+- Gasto en MO por imputación (WO, PEP, orden CO) y período; materiales consumidos (valorizados si hay precio) y recuperados.
+- **Presupuesto de PEP**: asignado / comprometido (certificados en curso) / consumido (liquidado) / disponible, con alerta de sobreconsumo.
+- Costo total de una tarea u obra: MO + materiales valorizados, sumando todos sus certificados.
+- Evolución de la LPU y su impacto en lo pendiente de pago.
 - Bandeja con semáforo de SLA.
 
 ## SLA
@@ -44,3 +49,4 @@ Objetivo: que **personal propio y contratistas vean los mismos números**, calcu
 - Los indicadores se precalculan periódicamente (no se recalculan en cada consulta) para responder rápido con volúmenes grandes.
 - Exportables a Excel.
 - Futuro: con la fecha de pago real (desde SAP) se agrega "días hasta el cobro".
+- Montos con reclamos (si se habilita la aprobación parcial): disputado, reclamado, reconocido, denegado.

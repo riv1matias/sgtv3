@@ -6,20 +6,22 @@ Objetivo: que cambios frecuentes del circuito **no requieran reprogramar**, sin 
 
 | Nivel | Ejemplos | Quién lo cambia | Cómo |
 |---|---|---|---|
-| **1. Datos de catálogo** | Precios, altas/bajas de códigos, materiales, imputaciones, marcar un código como "requiere 2da aprobación" | Compras / Administración | Pantallas de catálogo o importación Excel, con vigencia desde |
-| **2. Parámetros de reglas** | Monto a partir del cual interviene el gerente, SLA por paso, tipos de tarea, quién es aprobador final por tipo | Administrador funcional | Pantalla de parámetros, versionada |
+| **1. Datos de catálogo** | Nueva LPU, altas/bajas de códigos, materiales, imputaciones, marcar un código como "requiere 2da aprobación", campos adicionales de carátula | Compras / Administración | Pantallas de catálogo o importación Excel, con vigencia desde |
+| **2. Parámetros de reglas** | SLA por paso, aprobación final todo-o-nada vs. parcial, plazo para reclamar, fecha de corte del período de pago, quién es aprobador final por tipo | Administrador funcional | Pantalla de parámetros, versionada |
 | **3. Forma del circuito** | Agregar un paso de aprobación, cambiar a dónde va un rechazo, sacar un paso | Administrador del sistema | Nueva **versión** de la definición de flujo |
 
-La mayoría de los cambios reales ("este código ahora requiere gerente", "subió el preciario") son **nivel 1**, y no tocan el flujo.
+La mayoría de los cambios reales ("este código ahora requiere gerente", "salió una LPU nueva") son **nivel 1**, y no tocan el flujo.
 
 ## Definición de flujo
 
-Un flujo es un documento versionado con estados y transiciones:
+El mismo motor gobierna los cuatro ciclos: **tarea**, **certificado**, **reclamo** y **liquidación**. Cada uno es un flujo versionado con estados y transiciones. Ejemplo del certificado:
 
 ```yaml
 flujo: certificacion
 version: 1
 vigente_desde: 2026-11-01
+parametros:
+  aprobacion_final_modalidad: todo_o_nada   # o: parcial (habilita reclamos)
 
 estados:
   - clave: BORRADOR
@@ -29,20 +31,24 @@ estados:
     actor: solicitante
     sla: { horas_habiles: 48 }
   - clave: APROB_GERENTE
-    actor: gerente_area
+    actor: gerente_elegido          # por defecto el de la subregión
     sla: { horas_habiles: 48 }
   - clave: VAL_MATERIALES
     actor: { pool: administracion }
     sla: { horas_habiles: 72 }
-  - clave: APROB_FINAL_CERCO
-    actor: { pool: cerco }
-  - clave: APROB_FINAL_OBRA
-    actor: { pool: adm_obra }
+  - clave: APROB_FINAL
+    actor:
+      - si: { tipo_trabajo_en: [obra] }
+        pool: adm_obra
+      - pool: cerco
   - clave: OBSERVADO
     actor: contratista
   - clave: REVISION_RECHAZO
     actor: solicitante
-  - clave: APROBADO_PAGO
+  - clave: APROBADO
+  - clave: EN_LIQUIDACION
+    actor: contratista              # debe adjuntar factura
+  - clave: CERRADO
     tipo: final
   - clave: ANULADO
     tipo: final
@@ -51,8 +57,9 @@ transiciones:
   - accion: emitir
     desde: [BORRADOR, OBSERVADO]
     hacia: VAL_TECNICA
-    validaciones: [imputacion_asignada, al_menos_un_item, documentos_obligatorios]
-    efectos: [congelar_precios_y_reglas, nueva_version_si_corresponde, invalidar_aprobaciones]
+    validaciones: [imputacion_asignada, al_menos_un_item, al_menos_un_documento,
+                   montos_abiertos_justificados, facturas_de_recursos_adjuntas]
+    efectos: [valorizar_con_lpu_vigente, nueva_version_si_corresponde, invalidar_aprobaciones]
 
   - accion: aprobar
     desde: VAL_TECNICA
@@ -68,14 +75,19 @@ transiciones:
   - accion: aprobar
     desde: VAL_MATERIALES
     validaciones: [consumo_sap_registrado]
-    hacia:
-      - si: { tipo_tarea_en: [obra] }
-        ir_a: APROB_FINAL_OBRA
-      - ir_a: APROB_FINAL_CERCO
+    efectos: [fijar_imputacion]
+    hacia: APROB_FINAL
 
   - accion: aprobar
-    desde: [APROB_FINAL_CERCO, APROB_FINAL_OBRA]
-    hacia: APROBADO_PAGO
+    desde: APROB_FINAL
+    hacia: APROBADO
+
+  - accion: aprobar_parcial
+    desde: APROB_FINAL
+    habilitada_si: { parametro: aprobacion_final_modalidad, igual: parcial }
+    requiere: [observaciones_por_item]
+    efectos: [abrir_disputa_por_items]
+    hacia: APROBADO
 
   - accion: observar
     desde: VAL_TECNICA
@@ -83,7 +95,7 @@ transiciones:
     requiere: [comentario]
 
   - accion: rechazar
-    desde: [APROB_GERENTE, VAL_MATERIALES, APROB_FINAL_CERCO, APROB_FINAL_OBRA]
+    desde: [APROB_GERENTE, VAL_MATERIALES, APROB_FINAL]
     hacia: REVISION_RECHAZO
     requiere: [comentario]
     efectos: [recordar_paso_origen]
@@ -98,6 +110,16 @@ transiciones:
     hacia: OBSERVADO
     requiere: [comentario]
 
+  - accion: incluir_en_liquidacion   # la dispara el cierre del período
+    desde: APROBADO
+    hacia: EN_LIQUIDACION
+    efectos: [congelar_precios]
+
+  - accion: adjuntar_factura
+    desde: EN_LIQUIDACION
+    hacia: CERRADO
+    requiere: [adjunto]
+
   - accion: anular
     desde: [BORRADOR, OBSERVADO]
     hacia: ANULADO
@@ -110,13 +132,13 @@ La definición solo **combina** piezas conocidas. No hay scripting libre: cada p
 
 | Pieza | Ejemplos |
 |---|---|
-| **Actores** | `solicitante`, `supervisor_solicitante`, `contratista`, `gerente_area`, `pool:<rol>` |
-| **Condiciones** | `requiere_segunda_aprobacion`, `tipo_tarea_en`, `monto_total_mayor_a`, `tiene_materiales`, `tiene_recuperados` |
-| **Validaciones** | `imputacion_asignada`, `al_menos_un_item`, `documentos_obligatorios`, `consumo_sap_registrado` |
-| **Efectos** | `congelar_precios_y_reglas`, `invalidar_aprobaciones`, `recordar_paso_origen`, `notificar`, `generar_pdf` |
+| **Actores** | `solicitante`, `supervisor_solicitante`, `contratista`, `gerente_elegido`, `pool:<rol>` (acotado a la subregión de la tarea) |
+| **Condiciones** | `requiere_segunda_aprobacion`, `tipo_trabajo_en`, `subtipo_en`, `subregion_en`, `tiene_materiales`, `tiene_recuperados`, `tiene_montos_abiertos`, `parametro` |
+| **Validaciones** | `imputacion_asignada`, `al_menos_un_item`, `al_menos_un_documento`, `montos_abiertos_justificados`, `facturas_de_recursos_adjuntas`, `consumo_sap_registrado`, `campos_obligatorios_del_tipo` |
+| **Efectos** | `valorizar_con_lpu_vigente`, `congelar_precios`, `fijar_imputacion`, `invalidar_aprobaciones`, `recordar_paso_origen`, `abrir_disputa_por_items`, `notificar`, `generar_pdf` |
 | **Requisitos** | `comentario`, `observaciones_por_item`, `adjunto` |
 
-Si un cambio de negocio necesita una pieza nueva (ej.: "si la imputación es de tal centro de costo va a otro aprobador"), se programa la condición una vez y queda disponible para cualquier flujo.
+Si un cambio de negocio necesita una pieza nueva (ej.: "si la imputación es un PEP sin saldo, pasa por un aprobador extra"), se programa la condición una vez y queda disponible para cualquier flujo.
 
 ## Versionado — lo más importante
 
