@@ -7,12 +7,13 @@ import { accionesCertificado, certificadoCompleto, ESTADOS_EDITABLES, previsuali
 import { precioALaFecha } from '@/server/servicios/precios'
 import { parametros } from '@/server/comun'
 import { accionAdjuntar, accionImportarBitacora, accionQuitarDocumento } from '@/app/acciones/certificados'
+import { EtapasCertificado } from '@/components/progreso'
 import { VistaCertificado } from '@/components/vista-certificado'
 import { AccionesFlujo } from '@/components/acciones-flujo'
 import { EstadoBadge } from '@/components/estado'
 import { GaleriaDocumentos } from '@/components/documentos'
 import { BotonEnviar, Formulario } from '@/components/formulario'
-import { Aviso, Card, Encabezado, Input, Select } from '@/components/ui'
+import { Aviso, AyudaContextual, Card, Encabezado, Input, Select } from '@/components/ui'
 import { listaPara } from '@/domain/precios'
 import { hoy, periodoActual } from '@/lib/fechas'
 import { TIPOS_DOCUMENTO } from '@/lib/etiquetas'
@@ -65,6 +66,16 @@ export default async function Pagina({ params, searchParams }: { params: Promise
         subtitulo={<>Certificado {c.orden} de {t.certificadosPrevistos} · versión {c.versionActual} en edición · {t.urgencia ? 'Tarea de urgencia · ' : ''}lista de precios de {lista}</>}
         acciones={otras.length > 0 && <AccionesFlujo entidad="certificado" id={c.id} lockVersion={c.lockVersion} def={def} acciones={otras} />}
       />
+      <EtapasCertificado estado={c.estado} />
+      <AyudaContextual titulo="¿Cómo cargo el certificado?" href="/c/ayuda#guia-certificar" abierta={c.versionActual <= 1 && c.estado === 'BORRADOR'}>
+        <ol className="list-decimal space-y-1 pl-4 [&>li]:ml-0 [&>li]:list-decimal">
+          <li><b>Carátula</b>: período y fechas de ejecución. Si hay materiales, también centro y almacén.</li>
+          <li><b>Mano de obra</b>: buscá el código por S4, alias o descripción y cargá la cantidad. El precio sale de la LPU vigente. Los montos abiertos piden importe y justificación.</li>
+          <li><b>Materiales</b> usados y <b>recuperados</b> (con su estado).</li>
+          <li><b>Documentos</b>: fotos del antes y después como mínimo. Podés traer las fotos de la bitácora.</li>
+          <li><b>Guardá</b> el borrador cuando quieras y <b>emití</b> cuando esté completo: el sistema te avisa si falta algo.</li>
+        </ol>
+      </AyudaContextual>
       {ultimaDevolucion && c.estado !== 'BORRADOR' && (
         <div className="mb-4"><Aviso tono="error" titulo={c.estado === 'REBOTE_MATERIALES' ? 'Administración rebotó los materiales' : 'El certificado fue observado'}>
           {ultimaDevolucion.motivo ? `${ultimaDevolucion.motivo}: ` : ''}{ultimaDevolucion.comentario}

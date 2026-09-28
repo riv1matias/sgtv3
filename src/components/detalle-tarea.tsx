@@ -13,6 +13,7 @@ import { TablaCertificados } from './filas'
 import { GaleriaDocumentos } from './documentos'
 import { LineaTiempo } from './linea-tiempo'
 import { BotonEnviar, Formulario } from './formulario'
+import { EtapasTarea, SiguientePaso } from './progreso'
 import { Aviso, Badge, Campo, Card, Dato, Encabezado, Input, Pesos, Pestanas, Select, Textarea, Vacio } from './ui'
 import { formatoFecha, formatoFechaHora, hace } from '@/lib/fechas'
 import { TIPOS_IMPUTACION, TIPOS_TRABAJO } from '@/lib/etiquetas'
@@ -55,10 +56,12 @@ export async function DetalleTarea({ id, u, tab = 'resumen', creada }: { id: str
         acciones={puedeCertificar && (
           <Formulario accion={accionCrearCertificado}>
             <input type="hidden" name="tareaId" value={t.id} />
-            <BotonEnviar>+ Certificar {t.certificadosPrevistos > 1 ? `(avance ${activos.length + 1} de ${t.certificadosPrevistos})` : ''}</BotonEnviar>
+            <BotonEnviar estilo="primario">+ Certificar {t.certificadosPrevistos > 1 ? `(avance ${activos.length + 1} de ${t.certificadosPrevistos})` : ''}</BotonEnviar>
           </Formulario>
         )}
       />
+      <EtapasTarea estado={t.estado} />
+      <SiguientePaso estado={t.estado} portal={portal} extra={puedeCertificar && t.estado !== 'EJECUTADA' ? <div>Ya podés certificar esta tarea con el botón <b>Certificar</b>.</div> : undefined} />
       {creada && <div className="mb-4"><Aviso tono="ok">Tarea creada y asignada. El contratista tiene {48} h para aceptarla.</Aviso></div>}
       {acciones.length > 0 && (
         <div className="no-print mb-5">

@@ -4,7 +4,7 @@ import { getDb, schema as s } from '@/db'
 import { requerirUsuario } from '@/server/sesion'
 import { bandejaTareas, liquidacionesDe, listarCertificados } from '@/server/consultas'
 import { TablaCertificados, TablaTareas } from '@/components/filas'
-import { Card, Encabezado, Kpi, Pesos } from '@/components/ui'
+import { AyudaContextual, Card, Encabezado, Kpi, Pesos, Vacio } from '@/components/ui'
 import { formatoPesos } from '@/domain/dinero'
 
 export const metadata = { title: 'Mi bandeja' }
@@ -31,11 +31,20 @@ export default async function BandejaContratista() {
   return (
     <>
       <Encabezado titulo={u.contratistaNombre ?? 'Mi empresa'} subtitulo={`Hola, ${u.nombre}. Esto es lo que espera una acción de tu empresa.`} />
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="En aprobación" valor={<span className="text-xl">{formatoPesos(montos.enAprobacion)}</span>} detalle="Neto, emitido y en revisión" href="/c/certificados?estado=en_curso" />
-        <Kpi label="Aprobado, esperando cierre" valor={<span className="text-xl">{formatoPesos(montos.aprobado)}</span>} detalle="Se liquida al corte del período" tono="ok" />
-        <Kpi label="Liquidado, falta factura" valor={<span className="text-xl">{formatoPesos(montos.liquidado)}</span>} tono={pendFactura.length ? 'alerta' : 'neutro'} href="/c/liquidaciones" />
-        <Kpi label="Certificados para corregir" valor={corregir.filas.length} tono={corregir.filas.length ? 'peligro' : 'ok'} />
+      <AyudaContextual titulo="¿Cómo trabajo con Personal desde acá?" href="/c/ayuda">
+        <ol className="list-decimal space-y-1 pl-4 [&>li]:ml-0 [&>li]:list-decimal">
+          <li><b>Aceptá</b> las tareas nuevas dentro de las 48 h (o devolvelas indicando el motivo).</li>
+          <li><b>Iniciá</b> la tarea cuando la cuadrilla empieza y <b>informá el fin</b> al terminar. La cuadrilla puede cargar fotos desde el celular en <b>/campo</b>.</li>
+          <li><b>Certificá</b>: desde la tarea tocá <b>Certificar</b>, cargá los códigos de la LPU, materiales usados y recuperados, y las fotos. Después <b>emití</b>.</li>
+          <li>Si te <b>observan</b> un certificado, aparece acá arriba: corregilo y volvé a emitir.</li>
+          <li>Al cierre del período se genera la <b>liquidación</b>: subí la factura y listo.</li>
+        </ol>
+      </AyudaContextual>
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="En aprobación" valor={<span className="text-xl">{formatoPesos(montos.enAprobacion)}</span>} detalle="Neto, emitido y en revisión" href="/c/certificados?estado=en_curso" icono="reloj" />
+        <Kpi label="Aprobado, esperando cierre" valor={<span className="text-xl">{formatoPesos(montos.aprobado)}</span>} detalle="Se liquida al corte del período" tono="ok" icono="check" />
+        <Kpi label="Liquidado, falta factura" valor={<span className="text-xl">{formatoPesos(montos.liquidado)}</span>} tono={pendFactura.length ? 'alerta' : 'neutro'} href="/c/liquidaciones" icono="dinero" />
+        <Kpi label="Certificados para corregir" valor={corregir.filas.length} tono={corregir.filas.length ? 'peligro' : 'ok'} icono="alerta" />
       </div>
       {cambiosTipo.length > 0 && (
         <Card titulo="Cambios de tipo de trabajo que requieren tu conformidad" className="mb-5 border-amber-200">
@@ -50,8 +59,8 @@ export default async function BandejaContratista() {
       {corregir.filas.length > 0 && <Card titulo="Certificados observados o rebotados" className="mb-5" sinPadding><TablaCertificados filas={corregir.filas} portal="c" /></Card>}
       {porAceptar.length > 0 && <Card titulo={`Tareas por aceptar (${porAceptar.length})`} className="mb-5" sinPadding><TablaTareas filas={porAceptar} portal="c" conAcciones /></Card>}
       {borradores.filas.length > 0 && <Card titulo="Borradores sin emitir" className="mb-5" sinPadding><TablaCertificados filas={borradores.filas} portal="c" /></Card>}
-      {sinCertificar.length > 0 && <Card titulo="Tareas ejecutadas pendientes de certificar" className="mb-5" sinPadding><TablaTareas filas={sinCertificar} portal="c" /></Card>}
-      <Card titulo={`Tareas en curso (${enCurso.length})`} sinPadding><TablaTareas filas={enCurso} portal="c" conAcciones vacio="No hay tareas en curso" /></Card>
+      {sinCertificar.length > 0 && <Card titulo="Tareas ejecutadas pendientes de certificar" className="mb-5 border-marca-200 ring-2 ring-marca-100" sinPadding acciones={<span className="text-xs text-marca-700">Entrá a la tarea y tocá <b>Certificar</b></span>}><TablaTareas filas={sinCertificar} portal="c" /></Card>}
+      <Card titulo={`Tareas en curso (${enCurso.length})`} sinPadding>{enCurso.length ? <TablaTareas filas={enCurso} portal="c" conAcciones /> : <Vacio icono="tareas">No hay tareas en curso. Cuando Personal te asigne una, vas a verla en “Tareas por aceptar”.</Vacio>}</Card>
     </>
   )
 }

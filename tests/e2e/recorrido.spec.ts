@@ -3,14 +3,14 @@ import { ingresar, sinErrores } from './ayuda'
 
 // Recorre todas las pantallas del menú de cada perfil y verifica que ninguna falle
 const PERFILES: Array<[string, string[]]> = [
-  ['Lucía Fernández', ['/i', '/i/tareas', '/i/tareas/nueva', '/i/certificados', '/i/contratistas', '/i/indicadores', '/i/catalogos', '/i/config/delegaciones', '/i/notificaciones', '/i/buscar?q=T-AMBA']],
+  ['Lucía Fernández', ['/i', '/i/tareas', '/i/tareas/nueva', '/i/certificados', '/i/contratistas', '/i/indicadores', '/i/catalogos', '/i/config/delegaciones', '/i/notificaciones', '/i/buscar?q=T-AMBA', '/i/ayuda']],
   ['Martín Gómez', ['/i', '/i/auditoria']],
   ['Carla Benítez', ['/i', '/i/certificados?estado=APROB_GERENTE']],
   ['Sofía Acosta', ['/i', '/i/materiales', '/i/materiales?tab=stock', '/i/liquidaciones']],
   ['Valeria Ruiz', ['/i', '/i/liquidaciones', '/i/catalogos?tab=reglas']],
   ['Gustavo Ibáñez', ['/i/catalogos', '/i/catalogos?tab=codigos&q=fibra', '/i/catalogos?tab=materiales', '/i/catalogos?tab=imputaciones']],
   ['Administración del Sistema', ['/i/config', '/i/config?tab=organizacion', '/i/config?tab=parametros', '/i/config?tab=flujos', '/i/auditoria?verificar=1']],
-  ['Mariana López', ['/c', '/c/tareas', '/c/certificados', '/c/liquidaciones', '/c/cuadrillas', '/c/stock', '/c/indicadores', '/c/lpu', '/c/notificaciones']],
+  ['Mariana López', ['/c', '/c/tareas', '/c/certificados', '/c/liquidaciones', '/c/cuadrillas', '/c/stock', '/c/indicadores', '/c/lpu', '/c/notificaciones', '/c/ayuda', '/c/tareas']],
   ['Hernán Vega', ['/campo']],
 ]
 

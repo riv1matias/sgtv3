@@ -4,12 +4,14 @@ import type { Usuario } from '@/server/usuarios'
 import { accionesCertificado, certificadoCompleto, puedeVerCertificado } from '@/server/servicios/certificados'
 import { accionDocumentoSap, accionResolverAlerta, accionTomar } from '@/app/acciones/certificados'
 import { AccionesFlujo } from './acciones-flujo'
+import { EtapasCertificado, SiguientePaso } from './progreso'
 import { EstadoBadge } from './estado'
 import { GaleriaDocumentos } from './documentos'
 import { LineaTiempo } from './linea-tiempo'
 import { nombresUsuarios } from './detalle-tarea'
 import { BotonEnviar, Formulario } from './formulario'
-import { Aviso, Badge, Card, Campo, Dato, Encabezado, Input, Pesos, Select, Tabla, Td, Th } from './ui'
+import { Aviso, Badge, Card, Campo, Dato, Encabezado, Input, Pesos, Select, Tabla, Td, Th, clasesBoton } from './ui'
+import { Icono } from './iconos'
 import { conIva } from '@/domain/precios'
 import { dec, formatoCantidad } from '@/domain/dinero'
 import { formatoFecha, formatoFechaHora, hoy, nombrePeriodo } from '@/lib/fechas'
@@ -84,14 +86,16 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
         }
         acciones={
           <>
-            <a href={`/imprimir/certificado/${c.id}`} target="_blank" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">Imprimir / PDF</a>
-            {interno && mats.length + recs.length > 0 && <a href={`/api/exportar/materiales/${c.id}`} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">Reporte de materiales (SAP)</a>}
+            <a href={`/imprimir/certificado/${c.id}`} target="_blank" className={clasesBoton()}><Icono nombre="imprimir" /> Imprimir / PDF</a>
+            {interno && mats.length + recs.length > 0 && <a href={`/api/exportar/materiales/${c.id}`} className={clasesBoton()}><Icono nombre="descargar" /> Reporte de materiales (SAP)</a>}
           </>
         }
       />
 
+      <EtapasCertificado estado={c.estado} />
+      <SiguientePaso estado={c.estado} portal={portal} />
       {(acciones.length > 0 || puedeTomar || puedeSoltar || c.tomadoPor) && (
-        <div className="no-print mb-5 space-y-3 rounded-xl border border-marca-100 bg-marca-50/50 p-4">
+        <div className="no-print mb-5 space-y-3 rounded-2xl border border-marca-200 bg-marca-50/60 p-4">
           {c.tomadoPor && <div className="text-sm text-slate-600">Lo está trabajando <b>{nombres[c.tomadoPor]}</b>.</div>}
           <div className="flex flex-wrap items-start gap-2">
             {puedeTomar && (

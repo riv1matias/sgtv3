@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: { default: 'SGT — Gestión de tareas y certificación', template: '%s · SGT' },
-  description: 'Gestión de tareas y certificación de contratistas',
+  title: { default: 'Personal · Gestión de contratistas', template: '%s · Personal' },
+  description: 'Personal S.A. — Gestión de tareas y certificación de contratistas',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

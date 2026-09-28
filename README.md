@@ -1,4 +1,4 @@
-# SGT — Gestión de tareas y certificación de contratistas
+# Personal S.A. — Gestión de tareas y certificación de contratistas
 
 MVP / prueba de concepto del sistema que reemplaza el circuito de mails y planillas Excel: pedido de tareas, ejecución, certificación sobre la LPU, aprobaciones con rechazos cruzados, validación de materiales para SAP, liquidación por período y auditoría inmutable.
 
@@ -30,9 +30,18 @@ En modo `AUTH_MODE=dev` la pantalla de ingreso muestra los usuarios de prueba (t
 | Valeria Ruiz | CERCO | Aprobación final, reglas por código, liquidaciones |
 | Andrea Paz | Adm. de Obra | Aprobación final de obras |
 | Gustavo Ibáñez | Compras | Importar y publicar la LPU desde el Excel |
-| Mariana López | Contratista (Redes del Plata) | Aceptar tareas, editor de certificado, facturas, stock, indicadores |
+| Mariana López | Contratista (Redes del Plata) | Certificar la tarea **T-AMBA-000014** (ejecutada, lista para certificar), facturas, stock, indicadores |
 | Hernán Vega | Técnico de cuadrilla | App de campo (`/campo`), bitácora con fotos |
 | Auditoría Interna | Auditor | Auditoría completa y verificación de la cadena |
+
+### Recorrido sugerido: certificar como proveedor
+
+1. En el ingreso, elegí el recorrido **“Certificar como proveedor”** (entra como Mariana López).
+2. Abrí la tarea **T-AMBA-000014 · Reparación de empalme de fibra en cámara** (aparece en Mi bandeja → “Tareas ejecutadas pendientes de certificar”) y tocá **Certificar**.
+3. Cargá la carátula (período y fechas), la mano de obra (por ejemplo `5900105` × 1, `5900103` × 48 y `5900104` × 48), el material `10200001` × 1 y el mismo código como recuperado, y traé las fotos de la bitácora.
+4. Emití. Después ingresá como **Lucía Fernández** para validarlo y seguí el circuito.
+
+Cada portal tiene un **Centro de ayuda** (`/i/ayuda` y `/c/ayuda`) con guías por perfil, el circuito, preguntas frecuentes y glosario, además de ayuda contextual en las pantallas principales.
 
 ## Pruebas
 

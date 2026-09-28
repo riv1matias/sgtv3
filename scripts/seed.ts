@@ -361,6 +361,16 @@ async function circuitoDeDemo(ctx: { U: Map<string, string>; contrPorNombre: Map
   await adjuntarDocumentos(c14.id, [foto('camara-inundada.png'), foto('camara-achicada.png')], 'auto', rdp)
   await ejecutarAccionCertificado(c14.id, 'emitir', {}, rdp)
 
+  // 15. Lista para certificar: ejecutada, con fotos de la cuadrilla y sin certificado (recorrido sugerido para el proveedor)
+  const t15 = await tarea({
+    titulo: 'Reparación de empalme de fibra en cámara', lat: -34.603, lng: -58.412, dir: 'Av. Díaz Vélez 4100, CABA', contr: 'Redes del Plata S.A.', imp: 'WO-HX-0104512',
+    desc: 'Cámara con empalme de 48 fibras dañado por humedad. Reemplazar la caja de empalme, fusionar las 48 fibras y medir con OTDR. Recuperar la caja dañada.',
+  })
+  await acc(t15, 'aceptar', rdp)
+  await acc(t15, 'iniciar', rdp)
+  await agregarBitacora(t15.id, 'Caja de empalme reemplazada y 48 fusiones realizadas. Medición OTDR dentro de valores.', [foto('empalme-antes.png'), foto('empalme-despues.png')], rdpTec)
+  await acc(t15, 'informar_fin', rdp)
+
   // Período anterior cerrado con una liquidación pendiente de factura, y un ajuste para la próxima
   await crearPeriodo('2026-09', '2026-09-26', jorge)
   const [p] = await db.select().from(s.periodos).where(eq(s.periodos.nombre, '2026-09'))

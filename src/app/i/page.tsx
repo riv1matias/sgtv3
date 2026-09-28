@@ -4,7 +4,8 @@ import { alertasDeEquipo, bandejaCertificados, bandejaTareas } from '@/server/co
 import { procesarVencimientos } from '@/server/servicios/tareas'
 import { slaDe } from '@/components/estado'
 import { TablaCertificados, TablaTareas } from '@/components/filas'
-import { Card, Encabezado, Kpi, LinkBoton, Pesos } from '@/components/ui'
+import { AyudaContextual, Card, Encabezado, Kpi, LinkBoton, Pesos, Vacio } from '@/components/ui'
+import { Icono } from '@/components/iconos'
 import { aTexto, dec, formatoPesos, suma } from '@/domain/dinero'
 import { horasDesde } from '@/lib/fechas'
 
@@ -33,12 +34,20 @@ export default async function Bandeja() {
   return (
     <>
       <Encabezado titulo={`Hola, ${u.nombre}`} subtitulo="Lo que espera una acción tuya, ordenado por antigüedad"
-        acciones={tieneRol(u, 'solicitante') && <LinkBoton href="/i/tareas/nueva" estilo="primario">+ Nueva tarea</LinkBoton>} />
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Certificados esperando mi acción" valor={certs.length} />
-        <Kpi label="Fuera de plazo" valor={vencidos} tono={vencidos ? 'peligro' : 'ok'} detalle="Según el SLA de cada paso" />
-        <Kpi label="Monto esperando mi acción" valor={<span className="text-xl">{formatoPesos(monto)}</span>} detalle="Subtotal neto" />
-        <Kpi label="Tareas que requieren mi acción" valor={tareasAccion.length} tono={tareasAccion.length ? 'alerta' : 'neutro'} />
+        acciones={tieneRol(u, 'solicitante') && <LinkBoton href="/i/tareas/nueva" estilo="primario"><Icono nombre="mas" /> Nueva tarea</LinkBoton>} />
+      <AyudaContextual titulo="¿Qué es Mi bandeja?" href="/i/ayuda">
+        <p>Acá aparece <b>solo lo que espera una acción tuya</b> (o de las personas a las que reemplazás como supervisor o delegado), agrupado por paso del circuito y ordenado por antigüedad.</p>
+        <ul>
+          <li>El <b>punto de color</b> indica el plazo del paso: verde en plazo, amarillo por vencer, rojo vencido.</li>
+          <li>La columna <b>Qué hay que hacer</b> resume las acciones disponibles. Entrá al certificado para ejecutarlas.</li>
+          <li>Si un certificado está en un <b>pool</b> (Administración, CERCO), tomalo para que el resto sepa que lo estás trabajando.</li>
+        </ul>
+      </AyudaContextual>
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="Certificados esperando mi acción" valor={certs.length} icono="certificado" />
+        <Kpi label="Fuera de plazo" valor={vencidos} tono={vencidos ? 'peligro' : 'ok'} detalle="Según el SLA de cada paso" icono="reloj" />
+        <Kpi label="Monto esperando mi acción" valor={<span className="text-xl">{formatoPesos(monto)}</span>} detalle="Subtotal neto" icono="dinero" />
+        <Kpi label="Tareas que requieren mi acción" valor={tareasAccion.length} tono={tareasAccion.length ? 'alerta' : 'neutro'} icono="tareas" />
       </div>
       {alertas.length > 0 && (
         <Card titulo="Posibles tareas duplicadas en tu equipo" className="mb-5 border-amber-200">
@@ -63,7 +72,7 @@ export default async function Bandeja() {
         </Card>
       )}
       {!certs.length && !tareasAccion.length && (
-        <Card><div className="py-8 text-center text-sm text-slate-500">No tenés pendientes. 🎉 <Link href="/i/tareas" className="text-marca-700 hover:underline">Ver tareas</Link></div></Card>
+        <Card><Vacio icono="check"><div className="text-base font-medium text-slate-800">¡Estás al día!</div><div className="mt-1">No hay nada esperando una acción tuya. <Link href="/i/tareas" className="font-medium text-marca-700 hover:underline">Ver tareas</Link> · <Link href="/i/ayuda" className="font-medium text-marca-700 hover:underline">Centro de ayuda</Link></div></Vacio></Card>
       )}
     </>
   )

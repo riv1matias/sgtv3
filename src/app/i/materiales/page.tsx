@@ -3,7 +3,7 @@ import { colaMateriales, maestros } from '@/server/consultas'
 import { accionStock } from '@/app/acciones/gestion'
 import { TablaCertificados } from '@/components/filas'
 import { BotonEnviar, Formulario } from '@/components/formulario'
-import { Aviso, Campo, Card, Encabezado, Input, Pestanas, Select } from '@/components/ui'
+import { AyudaContextual, Aviso, Campo, Card, Encabezado, Input, Pestanas, Select } from '@/components/ui'
 import { hoy } from '@/lib/fechas'
 
 export const metadata = { title: 'Materiales y SAP' }
@@ -17,6 +17,14 @@ export default async function Materiales({ searchParams }: { searchParams: Promi
   return (
     <>
       <Encabezado titulo="Materiales y SAP" subtitulo="Validación de materiales, consumo en SAP, rebotes, reversas y stock de contratistas" />
+      <AyudaContextual titulo="¿Cómo valido los materiales?" href="/i/ayuda#guia-aprobar">
+        <ol className="list-decimal space-y-1 pl-4 [&>li]:ml-0 [&>li]:list-decimal">
+          <li><b>Tomá</b> el certificado del pool para que el resto sepa que lo estás trabajando.</li>
+          <li>Descargá el <b>reporte de materiales</b> en formato SAP y registrá el consumo en SAP.</li>
+          <li>Cargá el <b>número y archivo del documento</b> de consumo (y de ingreso de recuperados): el sistema compara cantidades.</li>
+          <li>Si coincide, <b>aprobá</b>. Si no, resolvé la alerta con la explicación o <b>rebotá</b> los materiales al contratista.</li>
+        </ol>
+      </AyudaContextual>
       <Pestanas activa={tab} items={[
         { clave: 'validacion', texto: `Para validar (${cola.validacion.length})`, href: '?tab=validacion' },
         { clave: 'rebotes', texto: `Rebotes en el contratista (${cola.rebotes.length})`, href: '?tab=rebotes' },

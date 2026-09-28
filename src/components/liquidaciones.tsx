@@ -5,7 +5,7 @@ import { ajustesPendientes, liquidacionesDe, maestros } from '@/server/consultas
 import { liquidacionCompleta, listarPeriodos } from '@/server/servicios/liquidaciones'
 import { accionAjuste, accionFacturaLiquidacion, accionPeriodo } from '@/app/acciones/gestion'
 import { BotonEnviar, Formulario } from './formulario'
-import { Aviso, Badge, Campo, Card, Encabezado, Input, Pesos, Select, Tabla, Td, Th, Vacio } from './ui'
+import { AyudaContextual, Aviso, Badge, Campo, Card, Encabezado, Input, Pesos, Select, Tabla, Td, Th, Vacio } from './ui'
 import { formatoFecha, formatoFechaHora, nombrePeriodo, periodoActual } from '@/lib/fechas'
 import { formatoPesos } from '@/domain/dinero'
 
@@ -21,6 +21,11 @@ export async function ListaLiquidaciones({ u, cerrado }: { u: Usuario; cerrado?:
   return (
     <>
       <Encabezado titulo="Liquidaciones" subtitulo={interno ? 'Cierre de períodos, congelamiento de precios y facturas' : 'Lo que se liquidó a tu empresa y las facturas pendientes'} />
+      <AyudaContextual titulo={interno ? '¿Cómo funciona el cierre?' : '¿Cómo cobro?'} href={interno ? '/i/ayuda#guia-liquidar' : '/c/ayuda#guia-facturar'}>
+        {interno
+          ? <p>Al <b>cerrar un período</b> se genera una liquidación por contratista con sus certificados <b>aprobados para pago</b> y los <b>ajustes</b> pendientes. El precio se congela según la política vigente (al emitir o a la fecha de corte). Después, cada contratista sube su factura.</p>
+          : <p>Cuando Personal cierra el período, tus certificados aprobados se agrupan en una <b>liquidación</b>. Abrila, revisá el detalle y <b>subí la factura</b> por el total. Si el importe no coincide, se genera un aviso para Administración.</p>}
+      </AyudaContextual>
       {cerrado != null && <div className="mb-4"><Aviso tono="ok">Período cerrado: se generaron {cerrado} liquidación(es) con los precios congelados. Los contratistas fueron notificados para facturar.</Aviso></div>}
       {interno && (
         <div className="mb-5 grid gap-5 lg:grid-cols-3">
