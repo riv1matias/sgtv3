@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   serverExternalPackages: ['pg', 'exceljs'],
   experimental: {
-    serverActions: { bodySizeLimit: '30mb' },
+    serverActions: { bodySizeLimit: '30mb', allowedOrigins: ['*.app.github.dev', 'localhost:3000'] },
   },
 }
 
