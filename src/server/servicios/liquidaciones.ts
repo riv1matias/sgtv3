@@ -39,7 +39,8 @@ export async function cerrarPeriodo(periodoId: number, u: Usuario) {
     const aprobados = await tx.select({ c: s.certificados, tipo: s.tareas.tipoTrabajo }).from(s.certificados)
       .innerJoin(s.tareas, eq(s.tareas.id, s.certificados.tareaId)).where(eq(s.certificados.estado, 'APROBADO'))
     const ajustesPend = await tx.select().from(s.ajustes).where(isNull(s.ajustes.liquidacionId))
-    const contratistas = new Set([...aprobados.map((a) => a.c.contratistaId), ...ajustesPend.map((a) => a.contratistaId)])
+    // Solo se liquida a quien tiene certificados aprobados; los ajustes de los demás esperan a su próxima liquidación
+    const contratistas = new Set(aprobados.map((a) => a.c.contratistaId))
     const actor = actorDe(u, 'administracion')
     const creadas = []
     for (const contratistaId of contratistas) {

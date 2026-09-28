@@ -27,7 +27,7 @@ export async function TablaCertificados({ filas, portal, vacio = 'No hay certifi
           <tr key={f.id} className="hover:bg-slate-50">
             <Td><Semaforo horas={horasDesde(f.desde)} objetivo={slas[i]} /></Td>
             <Td>
-              <Link href={`/${portal}/certificados/${f.id}`} className="font-medium text-marca-700 hover:underline">{f.numero}</Link>
+              <Link href={`/${portal}/certificados/${f.id}`} className="whitespace-nowrap font-medium text-marca-700 hover:underline">{f.numero}</Link>
               <div className="text-xs text-slate-500">{f.orden}/{f.previstos}{f.esFinal ? ' · final' : ''} · {nombrePeriodo(f.periodo)}</div>
             </Td>
             <Td>
@@ -79,7 +79,7 @@ export async function TablaTareas({ filas, portal, vacio = 'No hay tareas', conA
         {filas.map((f) => (
           <tr key={f.id} className="hover:bg-slate-50">
             <Td>
-              <Link href={`/${portal}/tareas/${f.id}`} className="font-medium text-marca-700 hover:underline">{f.numero}</Link>
+              <Link href={`/${portal}/tareas/${f.id}`} className="whitespace-nowrap font-medium text-marca-700 hover:underline">{f.numero}</Link>
               <div className="max-w-sm truncate text-slate-700">{f.titulo}</div>
               {f.direccion && <div className="max-w-sm truncate text-xs text-slate-500">{f.direccion}</div>}
             </Td>

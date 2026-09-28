@@ -180,7 +180,7 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
 
           {(mats.length > 0 || recs.length > 0) && (
             <div className="grid gap-5 lg:grid-cols-2">
-              {[['Materiales utilizados', mats], ['Materiales recuperados', recs]].map(([titulo, filas]) => (
+              {([['Materiales utilizados', mats], ['Materiales recuperados', recs]] as Array<[string, Fila[]]>).filter(([, f]) => f.length > 0).map(([titulo, filas]) => (
                 <Card key={titulo as string} titulo={`${titulo} (${(filas as Fila[]).length})`} sinPadding>
                   <Tabla>
                     <thead><tr><Th>Código SAP</Th><Th>Descripción</Th><Th className="text-right">Cant.</Th></tr></thead>
