@@ -19,7 +19,7 @@ export async function Busqueda({ u, q }: { u: Usuario; q: string }) {
       .where(and(alcanceTareas(u), or(ilike(s.tareas.numero, patron), ilike(s.tareas.titulo, patron), ilike(s.tareas.direccion, patron)))).limit(20),
     db.select({ id: s.certificados.id, numero: s.certificados.numero, titulo: s.tareas.titulo }).from(s.certificados).innerJoin(s.tareas, eq(s.tareas.id, s.certificados.tareaId))
       .where(and(alcanceTareas(u), ilike(s.certificados.numero, patron))).limit(20),
-    u.tipo === 'interno' ? db.select({ imp: s.imputaciones, tareas: sql<number>`(select count(*)::int from tareas t where t.imputacion_id = ${s.imputaciones.id})` }).from(s.imputaciones)
+    u.tipo === 'interno' ? db.select({ imp: s.imputaciones, tareas: sql<number>`(select count(*)::int from tareas t where t.imputacion_id = imputaciones.id)` }).from(s.imputaciones)
       .where(or(ilike(s.imputaciones.numero, patron), ilike(s.imputaciones.descripcion, patron))).limit(10) : Promise.resolve([]),
     u.tipo === 'interno' ? db.select().from(s.contratistas).where(or(ilike(s.contratistas.razonSocial, patron), ilike(s.contratistas.cuit, patron))).limit(10) : Promise.resolve([]),
   ]) : [[], [], [], []]

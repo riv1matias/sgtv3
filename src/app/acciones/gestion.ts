@@ -38,16 +38,19 @@ export async function accionDescartarLpu(_: EstadoAccion | null, fd: FormData) {
   return ejecutar(async () => { await descartarBorradorLpu(Number(texto(fd, 'lpuId')), u); return 'Borrador descartado' })
 }
 
-export async function accionPeriodo(_: EstadoAccion | null, fd: FormData) {
+export async function accionPeriodo(_: EstadoAccion | null, fd: FormData): Promise<EstadoAccion> {
   const u = await requerirUsuario('interno')
-  return ejecutar(async () => {
+  let generadas: number | null = null
+  const r = await ejecutar(async () => {
     if (texto(fd, 'op') === 'cerrar') {
-      const l = await cerrarPeriodo(Number(texto(fd, 'periodoId')), u)
-      return `Período cerrado: ${l.length} liquidación(es) generada(s)`
+      generadas = (await cerrarPeriodo(Number(texto(fd, 'periodoId')), u)).length
+      return
     }
     await crearPeriodo(texto(fd, 'nombre'), texto(fd, 'fechaCorte'), u)
     return 'Período creado'
   })
+  if (generadas != null) redirect(`/i/liquidaciones?cerrado=${generadas}`)
+  return r
 }
 
 export async function accionFacturaLiquidacion(_: EstadoAccion | null, fd: FormData) {

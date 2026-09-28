@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm'
 import { getDb } from '@/db'
 import { requerirUsuario } from '@/server/sesion'
 import { esNacional } from '@/server/usuarios'
+import { arreglo } from '@/server/indicadores'
 import { Badge, Card, Encabezado, Pesos, Tabla, Td, Th } from '@/components/ui'
 
 export const metadata = { title: 'Contratistas' }
@@ -18,7 +19,7 @@ export default async function Contratistas() {
       (select coalesce(sum(c.subtotal_actual), 0) from certificados c where c.contratista_id = k.id and c.estado not in ('CERRADO','ANULADO','ANULADO_REVERTIDO','BORRADOR','EN_LIQUIDACION')) monto_curso,
       (select count(*)::int from certificados c where c.contratista_id = k.id and c.estado in ('OBSERVADO','REBOTE_MATERIALES')) observados
     from contratistas k
-    where k.activo ${subs ? sql`and exists (select 1 from contratista_subregiones cs where cs.contratista_id = k.id and cs.subregion_id = any(${subs}::int[]))` : sql``}
+    where k.activo ${subs ? sql`and exists (select 1 from contratista_subregiones cs where cs.contratista_id = k.id and cs.subregion_id = any(${arreglo(subs, 'int')}))` : sql``}
     order by k.razon_social`)).rows
   return (
     <>

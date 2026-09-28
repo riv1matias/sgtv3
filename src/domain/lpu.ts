@@ -62,7 +62,7 @@ export function leerGrillaLpu(grilla: Celda[][]): LecturaLpu {
 
   let hdr = -1
   for (let r = 0; r < Math.min(grilla.length, 40); r++) {
-    const fila = grilla[r].map(norm)
+    const fila = Array.from(grilla[r], norm)
     if (fila.includes('S4') && fila.some((c) => c.includes('DESCRIPCION'))) { hdr = r; break }
     const iv = fila.findIndex((c) => c === 'VIGENCIA')
     if (iv >= 0) {
@@ -77,7 +77,7 @@ export function leerGrillaLpu(grilla: Celda[][]): LecturaLpu {
   }
   if (hdr < 0) return { filas: [], vigencia, porcentaje, errores: ['No se encontró la fila de encabezados (se esperan las columnas "S4" y "DESCRIPCIÓN")'] }
 
-  const h = grilla[hdr].map(norm)
+  const h = Array.from(grilla[hdr], norm)
   const col = (pred: (c: string) => boolean) => h.findIndex(pred)
   const cS4 = col((c) => c === 'S4')
   const cDesc = col((c) => c.includes('DESCRIPCION'))

@@ -1,4 +1,10 @@
 import { sql, type SQL } from 'drizzle-orm'
+
+/** Arreglo literal de PostgreSQL con parámetros (drizzle expande los arrays como tuplas) */
+export function arreglo(valores: Array<string | number>, tipo: 'int' | 'uuid') {
+  if (!valores.length) return tipo === 'int' ? sql`array[]::int[]` : sql`array[]::uuid[]`
+  return sql`array[${sql.join(valores.map((v) => sql`${v}`), sql`, `)}]::${sql.raw(tipo)}[]`
+}
 import { getDb } from '@/db'
 import { esNacional, type Usuario } from './usuarios'
 
@@ -10,7 +16,7 @@ function condicion(u: Usuario, f: FiltrosInd): SQL {
   if (u.tipo === 'contratista') partes.push(sql`t.contratista_id = ${u.contratistaId ?? -1}`)
   else if (!esNacional(u)) {
     const personas = [u.id, ...u.supervisados, ...u.delegantes]
-    partes.push(sql`(t.subregion_id = any(${u.subregionIds.length ? u.subregionIds : [-1]}::int[]) or t.solicitante_id = any(${personas}::uuid[]))`)
+    partes.push(sql`(t.subregion_id = any(${arreglo(u.subregionIds, 'int')}) or t.solicitante_id = any(${arreglo(personas, 'uuid')}))`)
   }
   if (f.tipo) partes.push(sql`t.tipo_trabajo = ${f.tipo}`)
   if (f.contratista) partes.push(sql`t.contratista_id = ${Number(f.contratista)}`)

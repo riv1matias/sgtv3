@@ -11,7 +11,7 @@ import { formatoPesos } from '@/domain/dinero'
 
 const ESTADO_LIQ: Record<string, [string, string]> = { pendiente_factura: ['Pendiente de factura', 'amber'], cerrada: ['Cerrada', 'green'] }
 
-export async function ListaLiquidaciones({ u }: { u: Usuario }) {
+export async function ListaLiquidaciones({ u, cerrado }: { u: Usuario; cerrado?: string }) {
   const interno = u.tipo === 'interno'
   const [liqs, periodos, ajustes, m] = await Promise.all([
     liquidacionesDe(u), interno ? listarPeriodos() : Promise.resolve([]), ajustesPendientes(interno ? undefined : u.contratistaId ?? -1), interno ? maestros(u) : Promise.resolve(null),
@@ -21,6 +21,7 @@ export async function ListaLiquidaciones({ u }: { u: Usuario }) {
   return (
     <>
       <Encabezado titulo="Liquidaciones" subtitulo={interno ? 'Cierre de períodos, congelamiento de precios y facturas' : 'Lo que se liquidó a tu empresa y las facturas pendientes'} />
+      {cerrado != null && <div className="mb-4"><Aviso tono="ok">Período cerrado: se generaron {cerrado} liquidación(es) con los precios congelados. Los contratistas fueron notificados para facturar.</Aviso></div>}
       {interno && (
         <div className="mb-5 grid gap-5 lg:grid-cols-3">
           <Card titulo="Períodos de pago" className="lg:col-span-2" sinPadding>

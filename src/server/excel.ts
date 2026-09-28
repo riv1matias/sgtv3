@@ -57,7 +57,7 @@ export async function leerLibro(archivo: File | { name: string; buffer: Buffer }
     const grilla: Celda[][] = []
     ws.eachRow({ includeEmpty: true }, (row, n) => {
       const vals = row.values as ExcelJS.CellValue[]
-      grilla[n - 1] = vals.slice(1).map(valorCelda)
+      grilla[n - 1] = Array.from(vals.slice(1), (v) => valorCelda(v))
     })
     for (let i = 0; i < grilla.length; i++) if (!grilla[i]) grilla[i] = []
     hojas.push({ nombre: ws.name, grilla })
