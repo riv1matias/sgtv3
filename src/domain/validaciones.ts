@@ -2,7 +2,7 @@
  * Validaciones del certificado al emitir (spec 05 "Validaciones y alertas").
  * Bloqueantes: impiden emitir. Alertas: no bloquean; las ve y resuelve el validador.
  */
-import { dec, esPositivo } from './dinero'
+import { dec, esPositivo, formatoCantidad } from './dinero'
 
 export interface ItemEntrada {
   tipo: 'mo' | 'material' | 'recuperado'
@@ -94,7 +94,7 @@ export function validarEmision(e: EntradaValidacion): ResultadoValidacion {
     if (!c.activo) alertas.push({ tipo: 'codigo_baja', mensaje: `${nombre}: el código fue dado de baja en la LPU vigente`, item: i })
     const valor = c.montoAbierto ? it.importe : it.cantidad
     if (c.umbralAlerta && esPositivo(valor) && dec(valor) > dec(c.umbralAlerta)) {
-      alertas.push({ tipo: 'umbral', mensaje: `${nombre}: ${c.montoAbierto ? 'importe' : 'cantidad'} atípica (supera ${c.umbralAlerta})`, item: i, evidencia: { valor, umbral: c.umbralAlerta } })
+      alertas.push({ tipo: 'umbral', mensaje: `${nombre}: ${c.montoAbierto ? 'importe' : 'cantidad'} atípica (supera ${formatoCantidad(c.umbralAlerta)})`, item: i, evidencia: { valor, umbral: c.umbralAlerta } })
     }
   }
 
@@ -107,7 +107,7 @@ export function validarEmision(e: EntradaValidacion): ResultadoValidacion {
     if (!m.activo) alertas.push({ tipo: 'material_baja', mensaje: `${m.codigoSap}: material inactivo en el catálogo`, item: i })
     if (it.tipo === 'recuperado' && !m.recuperable) alertas.push({ tipo: 'no_recuperable', mensaje: `${m.codigoSap}: el material no figura como recuperable`, item: i })
     if (m.umbralAlerta && esPositivo(it.cantidad) && dec(it.cantidad) > dec(m.umbralAlerta)) {
-      alertas.push({ tipo: 'umbral', mensaje: `${m.codigoSap} ${m.descripcion}: cantidad atípica (supera ${m.umbralAlerta})`, item: i })
+      alertas.push({ tipo: 'umbral', mensaje: `${m.codigoSap} ${m.descripcion}: cantidad atípica (supera ${formatoCantidad(m.umbralAlerta)})`, item: i })
     }
   }
 
