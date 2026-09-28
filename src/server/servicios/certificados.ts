@@ -415,6 +415,9 @@ async function efecto(tx: Tx, ef: string, e: CtxEfecto): Promise<Certificado> {
       set.subtotalActual = v.subtotal
       set.lpuActualId = v.lpuId
       set.requiereSegundaAprobacion = mo.some((m) => m.req)
+      // Congela el precio de emisión de los ítems que se emiten por primera vez
+      await tx.update(s.certificadoItems).set({ precioEmision: sql`${s.certificadoItems.precioUnitario}` })
+        .where(and(eq(s.certificadoItems.certificadoId, c.id), eq(s.certificadoItems.version, c.versionActual), sql`${s.certificadoItems.precioEmision} is null`))
       const items = await tx.select({ id: s.certificadoItems.id }).from(s.certificadoItems).where(and(eq(s.certificadoItems.certificadoId, c.id), eq(s.certificadoItems.version, c.versionActual))).orderBy(asc(s.certificadoItems.orden))
       if (e.estado.alertas.length) {
         await tx.insert(s.alertas).values(e.estado.alertas.map((a) => ({

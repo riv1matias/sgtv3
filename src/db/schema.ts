@@ -334,6 +334,8 @@ export const certificadoItems = pgTable('certificado_items', {
   /** Para ítems de monto abierto (AD) */
   importe: money('importe'),
   precioUnitario: numeric('precio_unitario', { precision: 16, scale: 4 }),
+  /** Precio al que se emitió por primera vez (base de la política de subas/bajas) */
+  precioEmision: numeric('precio_emision', { precision: 16, scale: 4 }),
   subtotal: money('subtotal'),
   justificacion: text('justificacion'),
   estadoRecuperado: text('estado_recuperado'),

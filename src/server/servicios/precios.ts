@@ -60,14 +60,13 @@ export async function valorizarCertificado(tx: Tx, cert: Cert, tipoTrabajo: stri
   const primera = cert.primeraEmisionAt ? hoy(cert.primeraEmisionAt) : null
   const fRef = opts.fechaForzada ?? fechaReferencia(politica, primera, hoyStr, cert.precioForzado)
   const actual = await precioALaFecha(tx, lista, fRef, lpus)
-  const emision = await precioALaFecha(tx, lista, primera ?? hoyStr, lpus)
   const items = await tx.select({ item: s.certificadoItems, montoAbierto: s.codigosMo.montoAbierto }).from(s.certificadoItems)
     .leftJoin(s.codigosMo, eq(s.codigosMo.id, s.certificadoItems.codigoMoId))
     .where(and(eq(s.certificadoItems.certificadoId, cert.id), eq(s.certificadoItems.version, cert.versionActual)))
   const v = valorizar(
-    items.map((x) => ({ tipo: x.item.tipo as 'mo', codigoMoId: x.item.codigoMoId, cantidad: x.item.cantidad, importe: x.item.importe, montoAbierto: !!x.montoAbierto })),
+    items.map((x) => ({ tipo: x.item.tipo as 'mo', codigoMoId: x.item.codigoMoId, cantidad: x.item.cantidad, importe: x.item.importe, montoAbierto: !!x.montoAbierto, precioEmision: x.item.precioEmision })),
     actual.precio,
-    { politica: cert.precioForzado ? { ...politica, aplicarBajas: true, aplicarSubas: true } : politica, precioEmisionDe: primera ? emision.precio : undefined, alicuotaIva: p.iva_alicuota },
+    { politica: cert.precioForzado ? { ...politica, aplicarBajas: true, aplicarSubas: true } : politica, alicuotaIva: p.iva_alicuota },
   )
   for (const [i, x] of items.entries()) {
     const l = v.lineas[i]

@@ -54,6 +54,8 @@ export interface ItemValorizable {
   cantidad?: string | null
   importe?: string | null
   montoAbierto?: boolean
+  /** Precio congelado a la primera emisión del ítem */
+  precioEmision?: string | null
 }
 
 export interface Valorizacion {
@@ -83,7 +85,7 @@ export function valorizar(
       if (it.codigoMoId != null) sinPrecio.push(it.codigoMoId)
       return { precioUnitario: null, subtotal: '0.00' }
     }
-    const pe = opciones.precioEmisionDe && it.codigoMoId != null ? opciones.precioEmisionDe(it.codigoMoId) : null
+    const pe = it.precioEmision ?? (opciones.precioEmisionDe && it.codigoMoId != null ? opciones.precioEmisionDe(it.codigoMoId) : null)
     const precio = precioSegunPolitica(pol, pe != null ? dec(pe) : null, dec(p))
     return { precioUnitario: aTexto(precio, 4), subtotal: aTexto(redondear(mul(dec(it.cantidad), precio))) }
   })

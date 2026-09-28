@@ -13,7 +13,7 @@ import { cerrarPeriodo, crearAjuste, crearPeriodo } from '../src/server/servicio
 import { registrarEvento, SISTEMA } from '../src/server/auditoria'
 import { aTexto, dec, mul } from '../src/domain/dinero'
 
-const db = getDb()
+let db: ReturnType<typeof getDb>
 
 // ─────────────────────────────── Organización ───────────────────────────────
 
@@ -135,7 +135,8 @@ const foto = (nombre: string) => new File([Buffer.concat([PNG, Buffer.from(`#${+
 const pdf = (nombre: string) => new File([Buffer.from(`%PDF-1.4\n% documento de demostración ${++nArchivo} ${nombre}\n%%EOF`)], nombre, { type: 'application/pdf' })
 const csv = (nombre: string, filas: Array<[string, number]>) => new File([`Material;Cantidad\n${filas.map(([c, q]) => `${c};${q}`).join('\n')}\n`], nombre, { type: 'text/csv' })
 
-async function main() {
+export async function sembrar() {
+  db = getDb()
   const [yaExiste] = await db.select().from(s.flujos).limit(1)
   if (yaExiste) { console.log('La base ya tiene datos. Usá "pnpm db:reset" para empezar de cero.'); return }
 
@@ -369,4 +370,6 @@ async function circuitoDeDemo(ctx: { U: Map<string, string>; contrPorNombre: Map
   void fme
 }
 
-main().then(() => getPool().end()).catch(async (e) => { console.error(e); await getPool().end(); process.exit(1) })
+if (process.argv[1]?.includes('seed')) {
+  sembrar().then(() => getPool().end()).catch(async (e) => { console.error(e); await getPool().end(); process.exit(1) })
+}
