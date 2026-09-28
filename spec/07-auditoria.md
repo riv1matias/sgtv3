@@ -11,7 +11,10 @@ Objetivo: ante cualquier controversia, poder reconstruir **quién hizo qué, cu�
 - Documentos: subida, reemplazo (con hash de ambos archivos), descarga de documentos sensibles.
 - Catálogos y LPU: cada alta, cambio, importación (con el archivo original) y publicación.
 - Revalorizaciones de certificados por LPU y congelamiento de precios en la liquidación.
-- Cambios de imputación.
+- Cambios de imputación y de tipo de trabajo (con la conformidad del contratista).
+- **Alertas** (reglas, duplicados, diferencias de consumo, IA): cuándo se generaron, quién las vio y cómo se resolvieron.
+- Documentos SAP subidos por Administración (consumo, ingreso de recuperados, reversas, correcciones).
+- Aprobaciones en lugar de otro (supervisor), traspasos, retiros y recuperaciones, con causal.
 - Flujos y parámetros: cada versión publicada.
 - Usuarios, roles, delegaciones, reasignaciones de pools.
 - Accesos: inicio de sesión, intentos fallidos, exportaciones.
@@ -46,3 +49,8 @@ Objetivo: ante cualquier controversia, poder reconstruir **quién hizo qué, cu�
 - **Comparación** entre versiones del certificado.
 - **Exportar el expediente** completo (PDF) para una controversia: certificado, versiones, documentos, línea de tiempo y verificación de integridad.
 - Búsqueda global de auditoría para usuarios con permiso.
+
+## Datos personales y retención
+
+- Los documentos pueden contener **datos personales** (DNI, rostros, domicilios de clientes; Ley 25.326): se pueden clasificar como **sensibles**, con acceso restringido y descarga auditada.
+- **Retención**: la que fije Legales según normativa (configurable). Lo cerrado pasa a almacenamiento frío después de N meses, sin perder integridad ni trazabilidad.

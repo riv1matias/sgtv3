@@ -7,12 +7,12 @@ Un único modelo de certificado para **Obras, Mantenimiento y Eventos**, que ree
 ```
 Certificado CERT-2026-000123 · versión 2 · certificado 2 de 4 (tarea T-AMBA-004512)
 ├── Carátula                (comunes + campos adicionales del tipo de trabajo)
-├── Mano de obra            (códigos de la LPU)
+├── Mano de obra            (códigos de la LPU) — OBLIGATORIA
 │   └── Ítems de monto abierto (AD): costo mínimo diario, adicionales, recursos solicitados
-├── Materiales utilizados   (catálogo de materiales SAP)
-├── Materiales recuperados  (catálogo de materiales SAP + estado)
+├── Materiales utilizados   (catálogo de materiales SAP) — opcional
+├── Materiales recuperados  (catálogo de materiales SAP + estado) — opcional
 ├── Documentación           (obligatoria, cualquier formato)
-└── Totales                 (a la emisión / actual / final pagado)
+└── Totales                 (subtotal neto, IVA 21%, total — a la emisión / actual / final pagado)
 ```
 
 ## Carátula
@@ -31,6 +31,7 @@ Certificado CERT-2026-000123 · versión 2 · certificado 2 de 4 (tarea T-AMBA-0
 | Período de certificación | Contratista (por defecto, el período en curso) |
 | Fechas reales de ejecución (desde – hasta) | Contratista |
 | Centro y almacén de consumo de materiales (uno de cada uno) | Contratista, de la lista habilitada |
+| Urgencia (sí/no) y su justificación | Tarea |
 | Comentario del contratista | Contratista |
 
 ### Campos adicionales por tipo de trabajo (configurables)
@@ -64,9 +65,17 @@ Códigos como *Costo mínimo diario*, *Recursos solicitados*, *Adicional viátic
 
 - El contratista carga **el importe** (no cantidad × precio).
 - **Justificación obligatoria**.
-- **Recursos solicitados** (materiales o insumos provistos por el contratista): **factura del proveedor adjunta obligatoria**. No se cargan como materiales.
+- **Recursos solicitados** (materiales o insumos provistos por el contratista): **factura del proveedor adjunta obligatoria**, con nº, fecha, CUIT e importe (cargados a mano en el MVP; leídos automáticamente más adelante, ver 12). No se cargan como materiales. Alerta si el importe difiere de la factura o si la factura ya se usó en otro certificado.
+- **Costo mínimo diario**: como máximo **uno por certificado** (no por día).
+- **Código de urgencia**: solo si la tarea está marcada como urgencia.
 - Normalmente disparan la **2da aprobación**.
 - **No se revalorizan** al cambiar la LPU (el importe es el que se cargó).
+
+## Validaciones y alertas
+
+- **Bloqueantes** (no deja emitir): al menos un ítem de **mano de obra**, al menos un documento, imputación asignada, montos abiertos justificados, facturas de recursos solicitados adjuntas, campos obligatorios del tipo de trabajo.
+- **Alertas** (no bloquean; las ve el validador): cantidades por encima del umbral del código, reglas de CERCO incumplidas ("B solo con A"), fotos repetidas en otro certificado, mismo código + cantidad + dirección + fecha en otro certificado, fotos cuyos metadatos (fecha/GPS) no coinciden, códigos dados de baja, certificado tardío.
+- Cada alerta queda registrada junto con quién la vio y cómo se resolvió.
 
 ## Materiales utilizados
 
@@ -93,7 +102,13 @@ Igual que utilizados, más el **estado**: utilizable / no utilizable / chatarra 
 - Cada archivo guarda hash SHA-256, quién lo subió y cuándo. **No se borran**: un reemplazo deja el anterior en el historial.
 - Vista previa de imágenes y PDF en el sistema; el resto se descarga.
 
+## Antigüedad
+
+Si el trabajo se certifica más tarde que la **antigüedad máxima** configurable (desde la fecha de ejecución), la emisión requiere **autorización**, y quien autoriza elige si se paga a **precio de emisión o actualizado** (por si la demora fue interna).
+
 ## Versiones
+
+Se ve **cómo mutó el certificado desde la primera emisión hasta el pago**: versiones de contenido, retiros, rebotes, revalorizaciones y ajustes, en una sola línea de tiempo.
 
 - Emitir congela el **contenido** de la versión: ítems, cantidades y documentos no se modifican nunca más.
 - Corregir crea la versión siguiente, precargada con la anterior.
@@ -103,8 +118,8 @@ Igual que utilizados, más el **estado**: utilizable / no utilizable / chatarra 
 
 ## Importes
 
-- Moneda ARS, precisión decimal exacta.
-- Total MO = Σ (cantidad × precio unitario LPU) + Σ montos abiertos.
+- Moneda ARS, precisión decimal exacta. Redondeo a 2 decimales por línea (⏳ confirmar contra el Excel actual).
+- La LPU es **neta**. Subtotal = Σ (cantidad × precio unitario LPU) + Σ montos abiertos; **IVA 21%** (alícuota configurable); **Total** = subtotal + IVA.
 - Se guardan tres importes: **a la emisión**, **actual** (con la última LPU) y **final pagado** (congelado al cierre de la liquidación), más la diferencia entre emisión y final.
 
 ## Salidas

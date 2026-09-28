@@ -18,7 +18,8 @@ Sistema de gestión de tareas y certificación de contratistas: desde el pedido 
 | 08 | [Indicadores](08-indicadores.md) | Información financiera, tiempos y SLA para personal y contratistas |
 | 09 | [Decisiones y preguntas](09-preguntas-abiertas.md) | Lo decidido y lo que falta definir |
 | 10 | [Análisis de planillas actuales](10-analisis-planillas-actuales.md) | Qué hay en los Excel de obras y mantenimiento y cómo se traslada |
-| 11 | [Casos borde](11-casos-borde.md) | Situaciones puntuales, riesgos y propuestas de tratamiento |
+| 11 | [Casos borde](11-casos-borde.md) | Situaciones puntuales y su resolución |
+| 12 | [Asistencia con IA](12-asistencia-ia.md) | Lectura de facturas y documentos SAP, reglas de CERCO, alertas |
 
 ## Glosario
 

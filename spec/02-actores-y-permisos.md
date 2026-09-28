@@ -9,6 +9,7 @@ País
         └── Base / Nodo / Localidad
 ```
 
+- Cada subregión tiene su **polígono (KML)**: la subregión de una tarea se calcula sola a partir de su ubicación.
 - **Usuarios internos** y **contratistas** se asignan a **una o más subregiones** (hay personas que por geografía cubren más de una).
 - La subregión define **qué se ve**: un contratista que trabaja en Córdoba no aparece en los listados de Capital; un solicitante solo ve contratistas habilitados en sus subregiones.
 - Algunos sectores tienen alcance mayor: Administración puede estar por subregión, por región o no estar regionalizada; **CERCO es nacional**.
@@ -21,7 +22,7 @@ País
 | **Solicitante** | Personal propio: **técnicos, inspectores, supervisores, analistas** | Pide la tarea, elige contratista, **define la imputación**, hace la **validación técnica** del certificado y triagea los rechazos posteriores |
 | **Supervisor** | Superior del solicitante | Figura en la carátula; ve todo lo de su equipo; puede reasignar al solicitante |
 | **Contratista** | Empresa proveedora con uno o más usuarios | Acepta, ejecuta, arma y emite el certificado, corrige lo observado, adjunta factura |
-| **Gerente** | Gerente de la **subregión donde se ejecuta** la tarea | **2da aprobación** cuando el certificado tiene códigos que la requieren |
+| **Gerente** | Gerente de la **subregión donde se ejecuta** la tarea (nunca vacante: si no está, lo reemplaza otro gerente o un subordinado designado) | **2da aprobación** cuando el certificado tiene códigos que la requieren |
 | **Administración** | Pool, con alcance por subregión/región o global | **Valida materiales**, descarga el reporte, consume en SAP y registra el documento |
 | **CERCO** | Pool nacional — Certificación de Contratistas | **Aprobación final** de Mantenimiento y Eventos |
 | **Adm. de Obra** | Pool | **Aprobación final** de Obras |
@@ -35,9 +36,18 @@ Un usuario puede tener varios roles y varias subregiones. Al actuar, el sistema 
 
 La tarea se asigna a la **empresa**. Cualquier usuario de la empresa con el permiso correspondiente puede actuar. Roles internos del contratista:
 
-- **Operador**: carga avances y arma borradores.
-- **Responsable / Certificador**: acepta tareas, emite certificados, responde observaciones, adjunta facturas.
-- **Consulta**: ve tareas e indicadores de su empresa.
+- **Responsable / Administrativo**: acepta tareas, subasigna a cuadrillas, arma y emite certificados, responde observaciones, adjunta facturas.
+- **Técnico / Jefe de cuadrilla**: ve las tareas que le subasignaron y carga en la **bitácora** avances, fotos y observaciones (pensado para el celular). No certifica.
+- **Consulta**: ve tareas, stock proyectado e indicadores de su empresa.
+
+### Módulo de gestión del contratista
+
+- **Cuadrillas**: el contratista da de alta sus técnicos y cuadrillas.
+- **Subasignación**: reparte las tareas aceptadas entre sus cuadrillas y ve el estado de cada una.
+- **Bitácora**: los técnicos cargan fotos y observaciones desde el campo; al terminar, el administrativo usa ese material para armar el certificado.
+- **Stock**: ve el stock de su centro y sus dos almacenes (proyecto y mantenimiento) según la última carga de Administración, menos lo certificado y aún no consumido (ver 06).
+
+Todo lo que carga un técnico queda a su nombre en la auditoría.
 
 ## Resolución de "a quién le toca"
 
@@ -45,15 +55,17 @@ La tarea se asigna a la **empresa**. Cualquier usuario de la empresa con el perm
    - `solicitante` → quien creó la tarea (o su delegado vigente).
    - `supervisor_solicitante` → superior en la jerarquía.
    - `contratista` → usuarios de la empresa asignada.
-   - `gerente_subregion` → gerente de la subregión donde se ejecuta. **El solicitante puede elegir otro gerente** al crear la tarea o antes de que llegue a ese paso (queda auditado).
+   - `gerente_subregion` → gerente de la subregión donde se ejecuta. Solo cambia si está marcado **de vacaciones o no disponible**; entre gerentes pueden tomarse pendientes sin pedir permiso.
 2. **Por pool** → cualquier usuario del rol con alcance sobre la subregión de la tarea (Administración, CERCO, Adm. de Obra). Un usuario **toma** el certificado para trabajarlo; puede soltarlo; un responsable del pool puede reasignarlo.
 
-## Delegaciones y reemplazos
+## Supervisión, delegaciones y reemplazos
 
-- Cualquier usuario puede **delegar** su bandeja por un período (vacaciones, licencia). El delegado actúa "en nombre de" y la auditoría registra a ambos.
-- Si un gerente tiene delegación activa, sus aprobaciones pendientes aparecen automáticamente al delegado.
-- El supervisor puede **reasignar el solicitante** de una tarea (por ejemplo, si la persona deja la empresa).
+- **Todo usuario tiene un supervisor**: el del solicitante, el de Administración, el de CERCO, etc. El supervisor puede **aprobar en lugar** de su subordinado o **reasignar** el pendiente, con causal. La auditoría conserva quién debía actuar, quién actuó y por qué.
+- Cualquier usuario puede **delegar** su bandeja por un período (vacaciones, licencia). El delegado actúa "en nombre de".
+- Una aprobación pendiente se puede **traspasar** a otro usuario del mismo rol las veces que haga falta, hasta que alguien actúe. Lo que no se delega es el rol en sí.
+- **Nadie aprueba dos pasos del mismo certificado**: si le toca a alguien que ya aprobó un paso anterior, se deriva al siguiente en la jerarquía.
 - El administrador puede reasignar cualquier pendiente, con motivo obligatorio.
+- Si se desactiva un usuario con pendientes, se alerta a su supervisor.
 
 ## Visibilidad
 
@@ -69,7 +81,8 @@ La tarea se asigna a la **empresa**. Cualquier usuario de la empresa con el perm
 ## Autenticación
 
 - **Personal propio**: inicio de sesión con el **IdP corporativo** (lo define Ciberseguridad; el sistema soporta OIDC y SAML).
-- **Contratistas**: a definir con Ciberseguridad si se dan de alta en el IdP corporativo como externos o si el sistema maneja su propio acceso (usuario + contraseña + segundo factor). Ver 09.
+- **Contratistas**: a definir con Ciberseguridad si se dan de alta en el IdP corporativo como externos o si el sistema maneja su propio acceso. En cualquier caso: **cuentas personales** (nunca compartidas), **segundo factor** y alerta por sesiones simultáneas.
+- Una cuenta no puede ser interna y de contratista a la vez; si una persona cambia de lado, se crea otra cuenta y se conserva el historial de la anterior.
 
 ## Permisos
 

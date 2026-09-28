@@ -14,7 +14,7 @@ La mayoría de los cambios reales ("este código ahora requiere gerente", "sali�
 
 ## Definición de flujo
 
-El mismo motor gobierna los cuatro ciclos: **tarea**, **certificado**, **reclamo** y **liquidación**. Cada uno es un flujo versionado con estados y transiciones. Ejemplo del certificado:
+El mismo motor gobierna los cuatro ciclos: **tarea**, **certificado**, **reclamo** y **liquidación**. Cada uno es un flujo versionado con estados y transiciones. Ejemplo **simplificado** del certificado (el circuito completo, con retiro, rebote de materiales y reversa SAP, está en 03):
 
 ```yaml
 flujo: certificacion
@@ -143,7 +143,8 @@ Si un cambio de negocio necesita una pieza nueva (ej.: "si la imputación es un 
 ## Versionado — lo más importante
 
 - Cada certificado queda **anclado a la versión del flujo** vigente cuando se creó. Cambiar el flujo **no altera** los que están en curso.
-- Opcionalmente, al publicar una versión nueva se puede **migrar** certificados en curso con un mapeo explícito de estados (auditado).
+- Al publicar una versión nueva se pueden **migrar** certificados en curso solo con un **mapeo explícito y validado** de estados (auditado).
+- Concurrencia: si dos personas actúan a la vez, la segunda acción se rechaza con el aviso "El certificado cambió mientras lo revisabas" o "Lo está trabajando *Nombre Apellido*".
 - Al publicar, el sistema **valida** la definición: todos los estados alcanzables, todo estado no final tiene salida, todas las piezas existen, no hay dos transiciones ambiguas para la misma acción.
 - Cada versión se puede **simular** (recorrer con casos de prueba) antes de publicarla.
 

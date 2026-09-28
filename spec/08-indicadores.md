@@ -12,18 +12,20 @@ Objetivo: que **personal propio y contratistas vean los mismos números**, calcu
 - Montos abiertos (costo mínimo diario, adicionales, recursos solicitados) y su peso sobre el total.
 - Monto observado/rechazado y retrabajo (versiones adicionales).
 - Composición por código de MO, por categoría, por tipo de trabajo, por subregión.
-- Por tarea con varios certificados: certificado acumulado, avances emitidos vs. previstos.
+- Por tarea con varios certificados: certificado acumulado y avances emitidos vs. previstos (sin mostrar presupuestos).
 - Antigüedad de lo pendiente (0–15, 15–30, 30–60, +60 días).
 
 **Tiempos**
-- Tiempo de aceptación, de ejecución, de fin de ejecución a emisión (lo que depende de él).
+- Tiempo de aceptación, de ejecución (sin contar EN_ESPERA), de fin de ejecución a emisión (lo que depende de él).
+- **Tiempo muerto** por esperas externas, por causal (permisos, acceso, materiales…).
 - Tiempo en cada paso de aprobación (lo que **no** depende de él): transparencia hacia el contratista.
 - Ciclo total: pedido → aprobado para pago.
 
 **Calidad**
 - % de certificados aprobados sin observaciones (primera vez).
 - Observaciones por motivo y por paso.
-- Cumplimiento de fechas comprometidas.
+- Rebotes de materiales y su motivo.
+- Tareas desestimadas por causal; tareas devueltas o vencidas sin respuesta.
 
 ## Para personal propio
 
@@ -31,14 +33,18 @@ Objetivo: que **personal propio y contratistas vean los mismos números**, calcu
 - **Cuellos de botella**: tiempo promedio y pendientes por paso y por persona/pool.
 - Ranking y comparación de contratistas (tiempos, calidad, montos).
 - Gasto en MO por imputación (WO, PEP, orden CO) y período; materiales consumidos (valorizados si hay precio) y recuperados.
-- **Presupuesto de PEP**: asignado / comprometido (certificados en curso) / consumido (liquidado) / disponible, con alerta de sobreconsumo.
+- **Presupuesto de PEP** (solo interno; el contratista nunca ve presupuestos): asignado / comprometido (certificados en curso) / consumido (liquidado) / disponible, con alerta de sobreconsumo.
 - Costo total de una tarea u obra: MO + materiales valorizados, sumando todos sus certificados.
 - Evolución de la LPU y su impacto en lo pendiente de pago.
-- Bandeja con semáforo de SLA.
+- Bandeja con semáforo de SLA; observados sin corregir con criticidad creciente hacia el cierre del período.
+- Urgencias: cantidad y monto por solicitante y contratista.
+- Alertas generadas (reglas de CERCO, duplicados, diferencias de consumo, IA) y cómo se resolvieron.
+- Stock proyectado por contratista y almacén.
 
 ## SLA
 
-- Configurables por **paso**, **tipo de tarea** y **prioridad**, en horas hábiles (con calendario de feriados).
+- **No hay fechas compromiso**: los SLA miden tiempos por paso, no cumplimiento de agenda.
+- Configurables por **paso** y **tipo de trabajo** (y urgencia), en horas hábiles (con calendario de feriados).
 - Cada estado del flujo mide tiempo desde que entra hasta que sale; se atribuye al actor que tenía la pelota.
 - Semáforo: en plazo / por vencer / vencido. Recordatorios y escalamiento al supervisor configurables.
 - Para ser justos, el SLA del contratista se pausa mientras la pelota está del lado de personal propio, y viceversa.
@@ -47,6 +53,6 @@ Objetivo: que **personal propio y contratistas vean los mismos números**, calcu
 
 - Montos en ARS nominales. Más adelante: vista a valores constantes (ajuste por índice) para comparar períodos.
 - Los indicadores se precalculan periódicamente (no se recalculan en cada consulta) para responder rápido con volúmenes grandes.
-- Exportables a Excel.
+- Exportables a Excel; los contratistas solo exportan lo propio, con campos limitados, y queda auditado.
 - Futuro: con la fecha de pago real (desde SAP) se agrega "días hasta el cobro".
 - Montos con reclamos (si se habilita la aprobación parcial): disputado, reclamado, reconocido, denegado.
