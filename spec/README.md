@@ -20,6 +20,7 @@ Sistema de gestión de tareas y certificación de contratistas: desde el pedido 
 | 10 | [Análisis de planillas actuales](10-analisis-planillas-actuales.md) | Qué hay en los Excel de obras y mantenimiento y cómo se traslada |
 | 11 | [Casos borde](11-casos-borde.md) | Situaciones puntuales y su resolución |
 | 12 | [Asistencia con IA](12-asistencia-ia.md) | Lectura de facturas y documentos SAP, reglas de CERCO, alertas |
+| 13 | [Frontend y experiencia](13-frontend-y-experiencia.md) | Arquitectura del front, perfiles, navegación y pantallas principales |
 
 ## Glosario
 
