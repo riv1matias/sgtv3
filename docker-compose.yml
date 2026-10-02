@@ -1,0 +1,36 @@
+# Entorno local completo: PostgreSQL + aplicación. Uso: docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: sgt
+      POSTGRES_DB: sgt
+    ports: ["5432:5432"]
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+  migrar:
+    build: { context: ., target: build }
+    command: sh -c "pnpm db:migrate && pnpm db:seed"
+    environment:
+      DATABASE_URL: postgres://postgres:sgt@db:5432/sgt
+      STORAGE_LOCAL_DIR: /datos/archivos
+    volumes: [archivos:/datos/archivos]
+    depends_on:
+      db: { condition: service_healthy }
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:sgt@db:5432/sgt
+      SESSION_SECRET: cambiar-por-un-secreto-largo-y-aleatorio-0000000000
+      AUTH_MODE: dev
+      STORAGE_LOCAL_DIR: /datos/archivos
+    ports: ["3000:3000"]
+    volumes: [archivos:/datos/archivos]
+    depends_on:
+      migrar: { condition: service_completed_successfully }
+volumes:
+  db:
+  archivos:

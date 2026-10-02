@@ -1,0 +1,1 @@
+ALTER TABLE "certificado_items" ADD COLUMN "precio_emision" numeric(16, 4);

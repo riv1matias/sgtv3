@@ -1,0 +1,27 @@
+{
+  "name": "SGT",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [
+    3000
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "SGT",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "sudo corepack enable && pnpm install && (test -f .env || cp .env.example .env) && sed -i 's#^DATABASE_URL=.*#DATABASE_URL=postgres://postgres:sgt@db:5432/sgt#' .env && pnpm db:reset",
+  "postAttachCommand": "pnpm dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+  "containerEnv": {
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+  }
+}

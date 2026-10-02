@@ -1,0 +1,182 @@
+# Flujo de la tarea — versión 1 (ver spec/03-ciclo-de-vida.md §1)
+flujo: tarea
+version: 1
+vigente_desde: 2026-10-01
+
+motivos:
+  rechazo_tarea: [Sin capacidad operativa, Fuera de zona, Fuera de especialidad, Información insuficiente, Otro]
+  espera: [Permiso municipal, Sin acceso al sitio, Espera de materiales, Clima, Cliente ausente, Otro]
+  cierre: [No se pudo realizar, Sin acceso definitivo, Duplicada, Resuelta por otro medio, Anulada por el cliente, Otro]
+  reasignacion: [Error de asignación, Capacidad del contratista, Especialidad, Otro]
+
+estados:
+  - { clave: PENDIENTE_ETAPA, etiqueta: En espera de etapa anterior, tipo: inicial, pausa_contratista: true, color: slate }
+  - { clave: ASIGNADA, etiqueta: Asignada, tipo: inicial, actor: contratista, sla_horas: 48, color: blue }
+  - { clave: DEVUELTA, etiqueta: Devuelta al solicitante, actor: solicitante, color: amber }
+  - { clave: ACEPTADA, etiqueta: Aceptada, actor: contratista, color: indigo }
+  - { clave: PEDIDO_REASIGNACION, etiqueta: Pedido de reasignación, actor: contratista, color: amber }
+  - { clave: EN_EJECUCION, etiqueta: En ejecución, actor: contratista, color: violet }
+  - { clave: EN_ESPERA, etiqueta: En espera, actor: contratista, pausa_contratista: true, color: slate }
+  - { clave: EJECUTADA, etiqueta: Ejecutada, actor: contratista, color: teal }
+  - { clave: EN_CERTIFICACION, etiqueta: En certificación, color: cyan }
+  - { clave: PEDIDO_CIERRE, etiqueta: Pedido de cierre sin certificar, actor: solicitante, color: amber }
+  - { clave: CERTIFICADA, etiqueta: Certificada, tipo: final, color: green }
+  - { clave: DESESTIMADA, etiqueta: Desestimada, tipo: final, color: gray }
+  - { clave: CANCELADA, etiqueta: Cancelada, tipo: final, color: gray }
+
+transiciones:
+  - accion: habilitar_etapa
+    etiqueta: Habilitar etapa
+    desde: [PENDIENTE_ETAPA]
+    hacia: ASIGNADA
+    actor: sistema
+
+  - accion: aceptar
+    etiqueta: Aceptar tarea
+    desde: [ASIGNADA]
+    hacia: ACEPTADA
+    estilo: primario
+
+  - accion: rechazar_tarea
+    etiqueta: Rechazar tarea
+    desde: [ASIGNADA]
+    hacia: DEVUELTA
+    requiere: [motivo]
+    motivos: rechazo_tarea
+    estilo: peligro
+
+  - accion: vencer_aceptacion
+    etiqueta: Vencida sin respuesta
+    desde: [ASIGNADA]
+    hacia: DEVUELTA
+    actor: sistema
+
+  - accion: reasignar
+    etiqueta: Reasignar contratista
+    desde: [ASIGNADA, DEVUELTA]
+    hacia: ASIGNADA
+    actor: solicitante
+    requiere: [motivo]
+    motivos: reasignacion
+    efectos: [cambiar_contratista]
+
+  - accion: pedir_reasignacion
+    etiqueta: Pedir reasignación
+    desde: [ACEPTADA]
+    hacia: PEDIDO_REASIGNACION
+    actor: solicitante
+    requiere: [motivo]
+    motivos: reasignacion
+    efectos: [guardar_reasignacion_pendiente]
+
+  - accion: liberar
+    etiqueta: Liberar la tarea
+    desde: [PEDIDO_REASIGNACION]
+    hacia: ASIGNADA
+    efectos: [aplicar_reasignacion_pendiente]
+    estilo: primario
+
+  - accion: no_liberar
+    etiqueta: No liberar
+    desde: [PEDIDO_REASIGNACION]
+    hacia: ACEPTADA
+    requiere: [comentario]
+    efectos: [descartar_reasignacion_pendiente]
+
+  - accion: iniciar
+    etiqueta: Iniciar trabajo
+    desde: [ACEPTADA]
+    hacia: EN_EJECUCION
+    estilo: primario
+
+  - accion: poner_en_espera
+    etiqueta: Poner en espera
+    desde: [EN_EJECUCION]
+    hacia: EN_ESPERA
+    requiere: [motivo]
+    motivos: espera
+    efectos: [registrar_causal_espera]
+
+  - accion: reanudar
+    etiqueta: Reanudar
+    desde: [EN_ESPERA]
+    hacia: EN_EJECUCION
+    estilo: primario
+
+  - accion: informar_fin
+    etiqueta: Informar fin de ejecución
+    desde: [EN_EJECUCION]
+    hacia: EJECUTADA
+    estilo: primario
+
+  - accion: pedir_cierre
+    etiqueta: Pedir cierre sin certificar
+    desde: [ACEPTADA, EN_EJECUCION, EN_ESPERA, EJECUTADA]
+    hacia: PEDIDO_CIERRE
+    requiere: [motivo, comentario]
+    motivos: cierre
+    efectos: [recordar_estado, registrar_causal_cierre]
+
+  - accion: aprobar_cierre
+    etiqueta: Aprobar cierre (desestimar)
+    desde: [PEDIDO_CIERRE]
+    hacia: DESESTIMADA
+    estilo: primario
+
+  - accion: rechazar_cierre
+    etiqueta: Rechazar cierre
+    desde: [PEDIDO_CIERRE]
+    hacia: $estadoAntesPedido
+    requiere: [comentario]
+
+  - accion: desestimar
+    etiqueta: Desestimar tarea
+    desde: [ACEPTADA, EN_EJECUCION, EN_ESPERA, EJECUTADA]
+    hacia: DESESTIMADA
+    actor: solicitante
+    requiere: [motivo, comentario]
+    motivos: cierre
+    efectos: [registrar_causal_cierre]
+    estilo: peligro
+    confirmar: La tarea quedará cerrada sin certificado.
+
+  - accion: cancelar
+    etiqueta: Cancelar tarea
+    desde: [ASIGNADA, DEVUELTA, PENDIENTE_ETAPA]
+    hacia: CANCELADA
+    actor: solicitante
+    requiere: [comentario]
+    estilo: peligro
+    confirmar: La tarea se cancelará definitivamente.
+
+  - accion: certificado_emitido
+    etiqueta: Certificado emitido
+    desde: [EN_EJECUCION, EN_ESPERA, EJECUTADA]
+    hacia: EN_CERTIFICACION
+    actor: sistema
+
+  - accion: certificado_parcial_aprobado
+    etiqueta: Avance aprobado
+    desde: [EN_CERTIFICACION]
+    hacia: EN_EJECUCION
+    actor: sistema
+
+  - accion: certificado_final_aprobado
+    etiqueta: Certificado final aprobado
+    desde: [EN_CERTIFICACION]
+    hacia: CERTIFICADA
+    actor: sistema
+
+  - accion: certificado_anulado
+    etiqueta: Certificado anulado
+    desde: [EN_CERTIFICACION]
+    hacia: EJECUTADA
+    actor: sistema
+
+  - accion: reabrir
+    etiqueta: Reabrir (más certificados)
+    desde: [CERTIFICADA]
+    hacia: EN_EJECUCION
+    actor: solicitante
+    requiere: [comentario]
+    efectos: [aumentar_certificados_previstos]

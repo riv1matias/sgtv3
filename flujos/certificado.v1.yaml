@@ -1,0 +1,217 @@
+# Flujo del certificado — versión 1 (ver spec/03-ciclo-de-vida.md §3)
+flujo: certificado
+version: 1
+vigente_desde: 2026-10-01
+
+parametros:
+  aprobacion_final_modalidad: todo_o_nada
+
+motivos:
+  observacion: [Trabajo incompleto o mal ejecutado, Código de MO incorrecto, Cantidades incorrectas, Materiales incorrectos, Documentación insuficiente, Fuera de alcance, Otro]
+  rechazo: [No corresponde al alcance, Documentación insuficiente, Códigos no autorizados, Montos incorrectos, Otro]
+  rebote: [Material sin stock en SAP, Código de material incorrecto, Cantidades incorrectas, Justificar origen, Otro]
+
+estados:
+  - { clave: BORRADOR, etiqueta: Borrador, tipo: inicial, actor: contratista, color: slate }
+  - { clave: VAL_TECNICA, etiqueta: Validación técnica, actor: solicitante, sla_horas: 48, color: blue }
+  - { clave: PEDIDO_RETIRO, etiqueta: Pedido de retiro, actor: solicitante, color: amber }
+  - { clave: APROB_GERENTE, etiqueta: Aprobación gerencial, actor: gerente, sla_horas: 48, color: indigo }
+  - { clave: VAL_MATERIALES, etiqueta: Validación de materiales, actor: { pool: administracion }, sla_horas: 72, color: violet }
+  - { clave: REBOTE_MATERIALES, etiqueta: Rebote de materiales, actor: contratista, color: amber }
+  - clave: APROB_FINAL
+    etiqueta: Aprobación final
+    sla_horas: 72
+    color: cyan
+    actor:
+      - { si: { tipo_trabajo_en: [obra] }, pool: adm_obra }
+      - { pool: cerco }
+  - { clave: OBSERVADO, etiqueta: Observado, actor: contratista, color: red }
+  - { clave: REVISION_RECHAZO, etiqueta: Revisión de rechazo, actor: solicitante, color: red }
+  - { clave: APROBADO, etiqueta: Aprobado para pago, color: green }
+  - { clave: EN_LIQUIDACION, etiqueta: En liquidación, actor: contratista, color: teal }
+  - { clave: CERRADO, etiqueta: Cerrado, tipo: final, color: green }
+  - { clave: ANULADO, etiqueta: Anulado, tipo: final, color: gray }
+  - { clave: PENDIENTE_REVERSA_SAP, etiqueta: Pendiente de reversa SAP, actor: { pool: administracion }, color: amber }
+  - { clave: ANULADO_REVERTIDO, etiqueta: Anulado (reversa SAP registrada), tipo: final, color: gray }
+
+transiciones:
+  - accion: emitir
+    etiqueta: Emitir certificado
+    desde: [BORRADOR, OBSERVADO]
+    hacia: VAL_TECNICA
+    validaciones: [emision]
+    efectos: [emitir_version, invalidar_aprobaciones, tarea_certificado_emitido]
+    estilo: primario
+
+  - accion: retirar
+    etiqueta: Retirar para corregir
+    desde: [VAL_TECNICA]
+    hacia: BORRADOR
+    actor: contratista
+    condicion: no_tomado
+    efectos: [nueva_version_borrador]
+
+  - accion: pedir_retiro
+    etiqueta: Pedir retiro
+    desde: [VAL_TECNICA]
+    hacia: PEDIDO_RETIRO
+    actor: contratista
+    condicion: tomado
+    requiere: [comentario]
+
+  - accion: aprobar_retiro
+    etiqueta: Aprobar retiro
+    desde: [PEDIDO_RETIRO]
+    hacia: BORRADOR
+    efectos: [nueva_version_borrador]
+
+  - accion: rechazar_retiro
+    etiqueta: Rechazar retiro
+    desde: [PEDIDO_RETIRO]
+    hacia: VAL_TECNICA
+    requiere: [comentario]
+
+  - accion: aprobar
+    etiqueta: Aprobar
+    desde: [VAL_TECNICA]
+    tipo: aprobacion
+    validaciones: [alertas_resueltas]
+    hacia:
+      - { si: requiereSegundaAprobacion, ir_a: APROB_GERENTE }
+      - { si: tieneMateriales, ir_a: VAL_MATERIALES }
+      - { ir_a: APROB_FINAL }
+    efectos: [registrar_aprobacion]
+    estilo: primario
+
+  - accion: observar
+    etiqueta: Observar (devolver al contratista)
+    desde: [VAL_TECNICA]
+    hacia: OBSERVADO
+    tipo: rechazo
+    requiere: [motivo, comentario]
+    motivos: observacion
+    efectos: [registrar_aprobacion, nueva_version_borrador]
+    estilo: peligro
+
+  - accion: aprobar
+    etiqueta: Aprobar
+    desde: [APROB_GERENTE]
+    tipo: aprobacion
+    validaciones: [alertas_resueltas]
+    hacia:
+      - { si: tieneMateriales, ir_a: VAL_MATERIALES }
+      - { ir_a: APROB_FINAL }
+    efectos: [registrar_aprobacion]
+    estilo: primario
+
+  - accion: aprobar
+    etiqueta: Aprobar materiales
+    desde: [VAL_MATERIALES]
+    tipo: aprobacion
+    validaciones: [consumo_registrado]
+    hacia: APROB_FINAL
+    efectos: [registrar_aprobacion]
+    estilo: primario
+
+  - accion: rebotar
+    etiqueta: Rebotar materiales al contratista
+    desde: [VAL_MATERIALES]
+    hacia: REBOTE_MATERIALES
+    tipo: rechazo
+    requiere: [motivo, comentario]
+    motivos: rebote
+    efectos: [registrar_aprobacion, nueva_version_borrador]
+    estilo: peligro
+
+  - accion: responder_rebote
+    etiqueta: Reenviar materiales corregidos
+    desde: [REBOTE_MATERIALES]
+    hacia: VAL_MATERIALES
+    requiere: [comentario]
+    validaciones: [emision, solo_materiales_cambiados]
+    efectos: [emitir_version]
+    estilo: primario
+
+  - accion: aprobar
+    etiqueta: Aprobación final
+    desde: [APROB_FINAL]
+    tipo: aprobacion
+    validaciones: [alertas_resueltas]
+    hacia: APROBADO
+    efectos: [registrar_aprobacion, tarea_certificado_aprobado]
+    estilo: primario
+
+  - accion: rechazar
+    etiqueta: Rechazar (al solicitante)
+    desde: [APROB_GERENTE, APROB_FINAL]
+    hacia: REVISION_RECHAZO
+    tipo: rechazo
+    requiere: [motivo, comentario]
+    motivos: rechazo
+    efectos: [registrar_aprobacion, recordar_paso_origen]
+    estilo: peligro
+
+  - accion: reenviar
+    etiqueta: Responder y reenviar
+    desde: [REVISION_RECHAZO]
+    hacia: $pasoOrigen
+    requiere: [comentario]
+    efectos: [contar_reenvio]
+    estilo: primario
+
+  - accion: devolver_al_contratista
+    etiqueta: Devolver al contratista
+    desde: [REVISION_RECHAZO]
+    hacia: OBSERVADO
+    requiere: [comentario]
+    efectos: [nueva_version_borrador]
+
+  - accion: anular
+    etiqueta: Anular certificado
+    desde: [BORRADOR, OBSERVADO]
+    requiere: [comentario]
+    hacia:
+      - { si: tieneConsumoRegistrado, ir_a: PENDIENTE_REVERSA_SAP }
+      - { ir_a: ANULADO }
+    efectos: [tarea_certificado_anulado]
+    estilo: peligro
+    confirmar: El certificado quedará anulado.
+
+  - accion: anular
+    etiqueta: Anular certificado
+    desde: [REVISION_RECHAZO]
+    requiere: [comentario]
+    hacia:
+      - { si: tieneConsumoRegistrado, ir_a: PENDIENTE_REVERSA_SAP }
+      - { ir_a: ANULADO }
+    efectos: [tarea_certificado_anulado]
+    estilo: peligro
+    confirmar: El certificado quedará anulado.
+
+  - accion: registrar_reversa
+    etiqueta: Registrar reversa SAP
+    desde: [PENDIENTE_REVERSA_SAP]
+    hacia: ANULADO_REVERTIDO
+    validaciones: [reversa_registrada]
+    estilo: primario
+
+  - accion: recuperar_aprobacion
+    etiqueta: Recuperar mi aprobación
+    desde: [APROB_GERENTE, VAL_MATERIALES, APROB_FINAL]
+    hacia: $pasoAnterior
+    actor: ultimo_aprobador
+    condicion: no_tomado
+    requiere: [comentario]
+    efectos: [invalidar_ultima_aprobacion]
+
+  - accion: incluir_en_liquidacion
+    etiqueta: Incluir en liquidación
+    desde: [APROBADO]
+    hacia: EN_LIQUIDACION
+    actor: sistema
+
+  - accion: cerrar
+    etiqueta: Cerrar
+    desde: [EN_LIQUIDACION]
+    hacia: CERRADO
+    actor: sistema
