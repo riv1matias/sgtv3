@@ -241,3 +241,13 @@ export function Etapas({ etapas, actual, tono = 'normal' }: { etapas: Array<{ te
     </ol>
   )
 }
+
+/** Botón que despliega un formulario secundario en un panel flotante (sin JavaScript) */
+export function Desplegable({ texto, children, estilo = 'secundario', ancho = 'w-80' }: { texto: React.ReactNode; children: React.ReactNode; estilo?: EstiloBoton; ancho?: string }) {
+  return (
+    <details className="group/desp relative">
+      <summary className={clasesBoton(estilo, true)}>{texto}<Icono nombre="chevron" className="h-3.5 w-3.5 transition-transform group-open/desp:rotate-180" /></summary>
+      <div className={clsx('absolute right-0 z-30 mt-2 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl', ancho)}>{children}</div>
+    </details>
+  )
+}

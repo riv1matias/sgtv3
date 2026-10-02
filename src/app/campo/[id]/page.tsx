@@ -36,6 +36,7 @@ export default async function TareaCampo({ params }: { params: Promise<{ id: str
       </div>
       <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
         <h2 className="mb-2 font-semibold">Lo cargado</h2>
+        {!d.bitacora.length && <p className="text-sm text-slate-500">Todavía no cargaste nada. Las fotos y notas que guardes aparecen acá y el responsable las puede sumar al certificado.</p>}
         <ul className="space-y-3">
           {d.bitacora.map((b) => (
             <li key={b.b.id} className="flex gap-3">

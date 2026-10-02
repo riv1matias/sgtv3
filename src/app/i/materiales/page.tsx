@@ -33,7 +33,6 @@ export default async function Materiales({ searchParams }: { searchParams: Promi
       ]} />
       {tab === 'validacion' && (
         <Card sinPadding>
-          <div className="border-b border-slate-100 p-3 text-xs text-slate-500">Para cada certificado: tomalo, descargá el reporte de materiales, consumí en SAP, registrá el documento (el sistema compara con lo declarado) y aprobá o rebotá.</div>
           <TablaCertificados filas={cola.validacion} portal="i" vacio="No hay certificados esperando validación de materiales" />
         </Card>
       )}

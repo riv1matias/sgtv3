@@ -8,6 +8,7 @@ import { precioALaFecha } from '@/server/servicios/precios'
 import { parametros } from '@/server/comun'
 import { accionAdjuntar, accionImportarBitacora, accionQuitarDocumento } from '@/app/acciones/certificados'
 import { EtapasCertificado } from '@/components/progreso'
+import { Icono } from '@/components/iconos'
 import { VistaCertificado } from '@/components/vista-certificado'
 import { AccionesFlujo } from '@/components/acciones-flujo'
 import { EstadoBadge } from '@/components/estado'
@@ -67,7 +68,7 @@ export default async function Pagina({ params, searchParams }: { params: Promise
         acciones={otras.length > 0 && <AccionesFlujo entidad="certificado" id={c.id} lockVersion={c.lockVersion} def={def} acciones={otras} />}
       />
       <EtapasCertificado estado={c.estado} />
-      <AyudaContextual titulo="¿Cómo cargo el certificado?" href="/c/ayuda#guia-certificar" abierta={c.versionActual <= 1 && c.estado === 'BORRADOR'}>
+      <AyudaContextual titulo="¿Cómo cargo el certificado?" href="/c/ayuda#guia-certificar">
         <ol className="list-decimal space-y-1 pl-4 [&>li]:ml-0 [&>li]:list-decimal">
           <li><b>Carátula</b>: período y fechas de ejecución. Si hay materiales, también centro y almacén.</li>
           <li><b>Mano de obra</b>: buscá el código por S4, alias o descripción y cargá la cantidad. El precio sale de la LPU vigente. Los montos abiertos piden importe y justificación.</li>
@@ -81,12 +82,6 @@ export default async function Pagina({ params, searchParams }: { params: Promise
           {ultimaDevolucion.motivo ? `${ultimaDevolucion.motivo}: ` : ''}{ultimaDevolucion.comentario}
         </Aviso></div>
       )}
-      {(val.bloqueantes.length > 0 || val.alertas.length > 0) && (
-        <div className="mb-4 grid gap-3 lg:grid-cols-2">
-          {val.bloqueantes.length > 0 && <Aviso tono="alerta" titulo="Para poder emitir falta:">{val.bloqueantes.map((b) => `• ${b.mensaje}`).join('\n')}</Aviso>}
-          {val.alertas.length > 0 && <Aviso tono="info" titulo="Advertencias (no bloquean, las revisa el validador):">{val.alertas.map((b) => `• ${b.mensaje}`).join('\n')}</Aviso>}
-        </div>
-      )}
       <div className="grid gap-5 xl:grid-cols-4">
         <div className="xl:col-span-3">
           <EditorCertificado
@@ -96,16 +91,34 @@ export default async function Pagina({ params, searchParams }: { params: Promise
             items={items}
           />
         </div>
-        <div className="space-y-5">
-          <Card titulo={`Documentación (${d.documentos.length})`}>
-            <p className="mb-3 text-xs text-slate-500">Obligatoria. Fotos, conforme a obra, remitos, planos (.dwg), planillas… El solicitante valida si alcanza.</p>
+        <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
+          <section className={`rounded-2xl border p-4 text-sm ${val.bloqueantes.length ? 'border-amber-200 bg-amber-50/70' : 'border-green-200 bg-green-50/70'}`} aria-label="Estado para emitir">
+            <div className={`flex items-center gap-2 font-semibold ${val.bloqueantes.length ? 'text-amber-900' : 'text-green-800'}`}>
+              <Icono nombre={val.bloqueantes.length ? 'alerta' : 'check'} />
+              {val.bloqueantes.length ? 'Para poder emitir falta:' : 'Listo para emitir'}
+            </div>
+            {val.bloqueantes.length > 0 && <ul className="mt-2 space-y-1 text-amber-900">{val.bloqueantes.map((b) => <li key={b.mensaje} className="flex gap-2"><span aria-hidden>•</span>{b.mensaje}</li>)}</ul>}
+            {!val.bloqueantes.length && <p className="mt-1 text-green-800">Revisá los importes abajo y tocá <b>Emitir certificado</b>.</p>}
+            {val.alertas.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-medium text-slate-600">{val.alertas.length} advertencia{val.alertas.length > 1 ? 's' : ''} (no bloquean)</summary>
+                <ul className="mt-1 space-y-1 text-xs text-slate-600">{val.alertas.map((b) => <li key={b.mensaje}>• {b.mensaje}</li>)}</ul>
+              </details>
+            )}
+            <p className="mt-2 text-[11px] text-slate-500">Se actualiza al guardar.</p>
+          </section>
+          <Card titulo={`5. Documentación (${d.documentos.length})`}>
+            <p className="mb-3 text-xs text-slate-500">Obligatoria: fotos del antes y después como mínimo, y remitos, planos o planillas si corresponde.</p>
             <Formulario accion={accionAdjuntar} className="space-y-2" reiniciar>
               <input type="hidden" name="certificadoId" value={c.id} />
-              <Input type="file" name="archivos" multiple required />
-              <Select name="tipo" defaultValue="auto">
-                <option value="auto">Detectar tipo</option>
-                {['foto', 'conforme_obra', 'remito', 'plano', 'factura', 'otro'].map((k) => <option key={k} value={k}>{TIPOS_DOCUMENTO[k]}</option>)}
-              </Select>
+              <Input type="file" name="archivos" multiple required className="file:mr-3 file:rounded-md file:border-0 file:bg-marca-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-marca-700" />
+              <details className="text-xs">
+                <summary className="cursor-pointer text-slate-500 hover:text-marca-700">Tipo de documento: se detecta solo (cambiar)</summary>
+                <Select name="tipo" defaultValue="auto" className="mt-1">
+                  <option value="auto">Detectar tipo</option>
+                  {['foto', 'conforme_obra', 'remito', 'plano', 'factura', 'otro'].map((k) => <option key={k} value={k}>{TIPOS_DOCUMENTO[k]}</option>)}
+                </Select>
+              </details>
               <BotonEnviar chico estilo="secundario">Adjuntar</BotonEnviar>
             </Formulario>
             <div className="mt-4">
@@ -119,15 +132,16 @@ export default async function Pagina({ params, searchParams }: { params: Promise
             </div>
           </Card>
           {fotosBitacora.length > 0 && (
-            <Card titulo="Desde la bitácora de la cuadrilla">
+            <Card titulo="Fotos de la cuadrilla">
+              <p className="-mt-1 mb-2 text-xs text-slate-500">Marcá las que quieras sumar al certificado.</p>
               <Formulario accion={accionImportarBitacora} className="space-y-2">
                 <input type="hidden" name="certificadoId" value={c.id} />
                 <div className="grid grid-cols-3 gap-2">
                   {fotosBitacora.map((f) => (
                     <label key={f.id} className="relative block cursor-pointer">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`/api/archivos/${f.id}`} alt={f.nombre} className="h-16 w-full rounded bg-slate-100 object-cover" />
-                      <input type="checkbox" name="documentoId" value={f.id} className="absolute left-1 top-1" />
+                      <img src={`/api/archivos/${f.id}`} alt={f.nombre} className="h-20 w-full rounded-lg bg-slate-100 object-cover ring-marca-500 peer-checked:ring-2" />
+                      <input type="checkbox" name="documentoId" value={f.id} className="absolute left-1.5 top-1.5 h-4 w-4 accent-marca-600" />
                     </label>
                   ))}
                 </div>

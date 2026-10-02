@@ -62,15 +62,36 @@ const PASOS: Record<string, { c?: string; i?: string }> = {
   EN_LIQUIDACION: { c: 'Está en una liquidación: subí la factura desde “Liquidaciones” para cerrarla.' },
 }
 
-export function SiguientePaso({ estado, portal, extra }: { estado: string; portal: 'i' | 'c'; extra?: React.ReactNode }) {
+/**
+ * Panel del paso actual. Con acciones (children) es "Te toca a vos": explica qué decidir y muestra los botones.
+ * Sin acciones es un aviso discreto de en qué está y quién lo tiene.
+ */
+export function SiguientePaso({ estado, portal, extra, children, quien, pie }: { estado: string; portal: 'i' | 'c'; extra?: React.ReactNode; children?: React.ReactNode; quien?: React.ReactNode; pie?: React.ReactNode }) {
   const texto = PASOS[estado]?.[portal]
-  if (!texto && !extra) return null
+  if (children) {
+    return (
+      <section className="no-print mb-6 rounded-2xl border border-marca-200 bg-gradient-to-br from-marca-50 via-white to-white p-4 shadow-[0_1px_2px_rgb(15_23_42/0.04)] sm:p-5" aria-label="Tu acción">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-marca-500 text-white"><Icono nombre="flecha" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold uppercase tracking-wide text-marca-700">Te toca a vos</div>
+            {texto && <p className="mt-0.5 text-sm text-slate-700">{texto}</p>}
+            {extra}
+            <div className="mt-3">{children}</div>
+            {pie}
+          </div>
+        </div>
+      </section>
+    )
+  }
+  if (!texto && !extra && !quien) return null
   return (
-    <div className="no-print mb-5 flex items-start gap-3 rounded-2xl border border-marca-200 bg-white px-4 py-3 shadow-[0_1px_2px_rgb(15_23_42/0.04)]">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-marca-500 text-white"><Icono nombre="flecha" className="h-3.5 w-3.5" /></span>
+    <div className="no-print mb-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500"><Icono nombre="reloj" className="h-3.5 w-3.5" /></span>
       <div className="text-sm text-slate-700">
-        <div className="text-xs font-semibold uppercase tracking-wide text-marca-700">Próximo paso</div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Próximo paso</div>
         {texto}
+        {quien && <div className="text-slate-500">{quien}</div>}
         {extra}
       </div>
     </div>

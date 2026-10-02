@@ -62,7 +62,7 @@ export default async function Bandeja() {
         return (
           <Card key={g.titulo} titulo={<>{g.titulo} <span className="ml-1 text-slate-400">({filas.length})</span></>} className="mb-5" sinPadding
             acciones={<span className="text-xs text-slate-500">Total <Pesos v={aTexto(suma(filas.map((f) => dec(f.subtotal))))} /></span>}>
-            <TablaCertificados filas={filas} portal="i" conAcciones />
+            <TablaCertificados filas={filas} portal="i" conAcciones sinEstado />
           </Card>
         )
       })}

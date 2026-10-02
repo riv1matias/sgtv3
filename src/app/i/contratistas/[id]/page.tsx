@@ -31,7 +31,7 @@ export default async function Contratista360({ params, searchParams }: { params:
         { clave: 'stock', texto: 'Stock', href: `${base}?tab=stock` },
         { clave: 'datos', texto: 'Datos y usuarios', href: `${base}?tab=datos` },
       ]} />
-      {tab === 'resumen' && <Tablero u={u} f={{ contratista: String(c.id) }} />}
+      {tab === 'resumen' && <Tablero u={u} f={{ contratista: String(c.id) }} embebido />}
       {tab === 'tareas' && <Card sinPadding><TablaTareas filas={(await listarTareas(u, { contratista: String(c.id), estado: 'activas' })).filas} portal="i" vacio="Sin tareas activas" /></Card>}
       {tab === 'certificados' && <Card sinPadding><TablaCertificados filas={(await listarCertificados(u, { contratista: String(c.id) })).filas} portal="i" /></Card>}
       {tab === 'stock' && <TablaStock contratistaId={c.id} />}

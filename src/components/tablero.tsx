@@ -3,7 +3,8 @@ import type { Usuario } from '@/server/usuarios'
 import { indicadores, type FiltrosInd } from '@/server/indicadores'
 import { maestros } from '@/server/consultas'
 import { flujoVigente } from '@/server/flujos'
-import { Card, Encabezado, Input, Kpi, Pesos, Select, Tabla, Td, Th, Vacio } from './ui'
+import { Boton, Card, Encabezado, Input, Kpi, LinkBoton, Pesos, Pestanas, Select, Tabla, Td, Th, Vacio, clasesBoton } from './ui'
+import { Icono } from './iconos'
 import { formatoPesos } from '@/domain/dinero'
 import { nombrePeriodo } from '@/lib/fechas'
 import { TIPOS_TRABAJO } from '@/lib/etiquetas'
@@ -15,7 +16,8 @@ function Barra({ valor, max, color = 'bg-marca-500' }: { valor: number; max: num
   return <div className="h-2 w-full rounded-full bg-slate-100"><div className={`h-2 rounded-full ${color}`} style={{ width: `${max > 0 ? Math.max(2, (valor / max) * 100) : 0}%` }} /></div>
 }
 
-export async function Tablero({ u, f }: { u: Usuario; f: FiltrosInd }) {
+export async function Tablero({ u, f: fUrl, embebido }: { u: Usuario; f: FiltrosInd & { vista?: string }; embebido?: boolean }) {
+  const { vista: vistaUrl, ...f } = fUrl
   const interno = u.tipo === 'interno'
   const [d, flujoC, flujoT, m] = await Promise.all([indicadores(u, f), flujoVigente('certificado'), flujoVigente('tarea'), interno ? maestros(u) : Promise.resolve(null)])
   const etC = (e: string) => flujoC.def.estados.find((x) => x.clave === e)?.etiqueta ?? e
@@ -31,22 +33,45 @@ export async function Tablero({ u, f }: { u: Usuario; f: FiltrosInd }) {
   const maxHoras = Math.max(...d.tiempos.map((x) => x.horas), 0)
   const tiempos = [...d.tiempos].sort((a, b) => flujoC.def.estados.findIndex((e) => e.clave === a.estado) - flujoC.def.estados.findIndex((e) => e.clave === b.estado))
   const ladoContratista = ['BORRADOR', 'OBSERVADO', 'REBOTE_MATERIALES', 'EN_LIQUIDACION']
+  const vistas = [
+    { clave: 'resumen', texto: 'Resumen' },
+    { clave: 'tiempos', texto: 'Tiempos y calidad' },
+    ...(interno && d.ranking.length ? [{ clave: 'contratistas', texto: 'Comparar contratistas' }] : []),
+    ...(interno && d.peps.length ? [{ clave: 'presupuesto', texto: 'Presupuesto PEP' }] : []),
+  ]
+  const vista = embebido ? 'resumen' : vistas.some((v) => v.clave === vistaUrl) ? vistaUrl! : 'resumen'
+  const filtrosActivos = Object.entries(f).filter(([, v]) => v).length
+  const conVista = (v: string) => `?${new URLSearchParams({ ...(Object.fromEntries(Object.entries(f).filter(([, x]) => x)) as Record<string, string>), vista: v })}`
 
   return (
     <>
-      <Encabezado titulo={interno ? 'Indicadores' : 'Mis indicadores'} subtitulo={interno ? 'Montos, tiempos y calidad en tu alcance' : 'Lo que certificaste, dónde está y cuánto tarda cada paso'}
-        acciones={<a href={`/api/exportar/certificados?${new URLSearchParams(f as Record<string, string>).toString()}`} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">Exportar detalle</a>} />
-      <form className="no-print mb-5 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
-        <label className="text-xs text-slate-500">Desde<Input type="date" name="desde" defaultValue={f.desde} /></label>
-        <label className="text-xs text-slate-500">Hasta<Input type="date" name="hasta" defaultValue={f.hasta} /></label>
-        <label className="text-xs text-slate-500">Tipo<Select name="tipo" defaultValue={f.tipo ?? ''}><option value="">Todos</option>{Object.entries(TIPOS_TRABAJO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></label>
-        {m && <label className="text-xs text-slate-500">Contratista<Select name="contratista" defaultValue={f.contratista ?? ''}><option value="">Todos</option>{m.contratistas.map((c) => <option key={c.id} value={c.id}>{c.razonSocial}</option>)}</Select></label>}
-        {m && <label className="text-xs text-slate-500">Subregión<Select name="subregion" defaultValue={f.subregion ?? ''}><option value="">Todas</option>{m.misSubregiones.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</Select></label>}
-        {m && <label className="text-xs text-slate-500">Imputación<Select name="imputacion" defaultValue={f.imputacion ?? ''}><option value="">Todas</option>{m.imputaciones.map((x) => <option key={x.id} value={x.id}>{x.numero}</option>)}</Select></label>}
-        <button className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white">Aplicar</button>
-      </form>
+      {!embebido && (
+        <Encabezado titulo={interno ? 'Indicadores' : 'Mis indicadores'} subtitulo={interno ? 'Montos, tiempos y calidad en tu alcance' : 'Lo que certificaste, dónde está y cuánto tarda cada paso'}
+          acciones={<a href={`/api/exportar/certificados?${new URLSearchParams(f as Record<string, string>).toString()}`} className={clasesBoton()}><Icono nombre="descargar" /> Exportar detalle</a>} />
+      )}
+      {!embebido && (
+        <details open={filtrosActivos > 0} className="no-print group mb-4 rounded-2xl border border-slate-200/80 bg-white">
+          <summary className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600">
+            <Icono nombre="ajustes" className="text-slate-400" /> Filtrar período, tipo{m ? ', contratista o imputación' : ''}
+            {filtrosActivos > 0 && <span className="rounded-full bg-marca-100 px-2 text-xs text-marca-800">{filtrosActivos} activo{filtrosActivos > 1 ? 's' : ''}</span>}
+            <Icono nombre="chevron" className="ml-auto text-slate-400 transition-transform group-open:rotate-180" />
+          </summary>
+          <form className="grid gap-2 border-t border-slate-100 p-3 sm:grid-cols-3 lg:grid-cols-7">
+            <input type="hidden" name="vista" value={vista} />
+            <label className="text-xs text-slate-500">Desde<Input type="date" name="desde" defaultValue={f.desde} className="mt-0.5" /></label>
+            <label className="text-xs text-slate-500">Hasta<Input type="date" name="hasta" defaultValue={f.hasta} className="mt-0.5" /></label>
+            <label className="text-xs text-slate-500">Tipo<Select name="tipo" defaultValue={f.tipo ?? ''} className="mt-0.5"><option value="">Todos</option>{Object.entries(TIPOS_TRABAJO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></label>
+            {m && <label className="text-xs text-slate-500">Contratista<Select name="contratista" defaultValue={f.contratista ?? ''} className="mt-0.5"><option value="">Todos</option>{m.contratistas.map((c) => <option key={c.id} value={c.id}>{c.razonSocial}</option>)}</Select></label>}
+            {m && <label className="text-xs text-slate-500">Subregión<Select name="subregion" defaultValue={f.subregion ?? ''} className="mt-0.5"><option value="">Todas</option>{m.misSubregiones.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</Select></label>}
+            {m && <label className="text-xs text-slate-500">Imputación<Select name="imputacion" defaultValue={f.imputacion ?? ''} className="mt-0.5"><option value="">Todas</option>{m.imputaciones.map((x) => <option key={x.id} value={x.id}>{x.numero}</option>)}</Select></label>}
+            <div className="flex items-end gap-2"><Boton estilo="primario" className="w-full">Aplicar</Boton>{filtrosActivos > 0 && <LinkBoton href={`?vista=${vista}`} estilo="fantasma">Limpiar</LinkBoton>}</div>
+          </form>
+        </details>
+      )}
+      {!embebido && vistas.length > 1 && <Pestanas activa={vista} items={vistas.map((v) => ({ clave: v.clave, texto: v.texto, href: conVista(v.clave) }))} />}
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {vista === 'resumen' && (<>
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Kpi label="En aprobación" valor={<span className="text-xl">{formatoPesos(enAprob)}</span>} detalle={`${pasos.reduce((a, x) => a + x.n, 0)} certificados`} />
         <Kpi label="Aprobado, a liquidar" valor={<span className="text-xl">{formatoPesos(aprobado)}</span>} tono="ok" />
         <Kpi label="Liquidado / cerrado" valor={<span className="text-xl">{formatoPesos(liquidado)}</span>} />
@@ -68,20 +93,6 @@ export async function Tablero({ u, f }: { u: Usuario; f: FiltrosInd }) {
           ) : <Vacio>No hay certificados en aprobación</Vacio>}
         </Card>
 
-        <Card titulo="Tiempo promedio en cada paso (horas)">
-          {tiempos.length ? (
-            <ul className="space-y-3">
-              {tiempos.map((x) => (
-                <li key={x.estado}>
-                  <div className="mb-1 flex justify-between text-sm"><span>{etC(x.estado)}{ladoContratista.includes(x.estado) && <span className="ml-1 text-xs text-amber-700">· contratista</span>}</span><span className="num">{x.horas < 48 ? `${x.horas.toFixed(1)} h` : `${(x.horas / 24).toFixed(1)} días`}</span></div>
-                  <Barra valor={x.horas} max={maxHoras} color={ladoContratista.includes(x.estado) ? 'bg-amber-400' : 'bg-cyan-500'} />
-                </li>
-              ))}
-            </ul>
-          ) : <Vacio>Sin datos de tiempos</Vacio>}
-          <p className="mt-3 text-xs text-slate-500">Calculado desde la auditoría. Ámbar: tiempo del lado del contratista; el resto es tiempo de personal propio.</p>
-        </Card>
-
         <Card titulo="Certificado por mes (primera emisión)">
           {d.porMes.length ? (
             <ul className="space-y-3">
@@ -100,6 +111,25 @@ export async function Tablero({ u, f }: { u: Usuario; f: FiltrosInd }) {
             <Tabla><thead><tr><Th>Antigüedad</Th><Th className="text-right">Certificados</Th><Th className="text-right">Monto</Th></tr></thead>
               <tbody className="divide-y divide-slate-100">{d.abiertos.map((x) => <tr key={x.rango}><Td>{x.rango}</Td><Td className="num">{x.n}</Td><Td className="num"><Pesos v={x.monto} /></Td></tr>)}</tbody></Tabla>
           ) : <Vacio>No hay pendientes</Vacio>}
+        </Card>
+      </div>
+      {embebido && interno && <p className="mt-4 text-sm"><Link href={`/i/indicadores?contratista=${f.contratista}`} className="font-medium text-marca-700 hover:underline">Ver tiempos, calidad y más indicadores de este contratista →</Link></p>}
+      </>)}
+
+      {vista === 'tiempos' && (
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Card titulo="Tiempo promedio en cada paso">
+          {tiempos.length ? (
+            <ul className="space-y-3">
+              {tiempos.map((x) => (
+                <li key={x.estado}>
+                  <div className="mb-1 flex justify-between text-sm"><span>{etC(x.estado)}{ladoContratista.includes(x.estado) && <span className="ml-1 text-xs text-amber-700">· contratista</span>}</span><span className="num">{x.horas < 48 ? `${x.horas.toFixed(1)} h` : `${(x.horas / 24).toFixed(1)} días`}</span></div>
+                  <Barra valor={x.horas} max={maxHoras} color={ladoContratista.includes(x.estado) ? 'bg-amber-400' : 'bg-cyan-500'} />
+                </li>
+              ))}
+            </ul>
+          ) : <Vacio>Sin datos de tiempos</Vacio>}
+          <p className="mt-3 text-xs text-slate-500">Calculado desde la auditoría. Ámbar: tiempo del lado del contratista; el resto es tiempo de personal propio.</p>
         </Card>
 
         <Card titulo="Observaciones y rechazos por motivo">
@@ -121,8 +151,10 @@ export async function Tablero({ u, f }: { u: Usuario; f: FiltrosInd }) {
         </Card>
       </div>
 
-      {interno && d.ranking.length > 0 && (
-        <Card titulo="Comparación de contratistas" className="mt-5" sinPadding>
+      )}
+
+      {vista === 'contratistas' && (
+        <Card titulo="Comparación de contratistas" sinPadding>
           <Tabla>
             <thead><tr><Th>Contratista</Th><Th className="text-right">Certificados</Th><Th className="text-right">Monto</Th><Th className="text-right">Aprobados</Th><Th className="text-right">Sin observaciones</Th><Th className="text-right">Observaciones</Th><Th className="text-right">Ciclo emisión → aprobado</Th></tr></thead>
             <tbody className="divide-y divide-slate-100">
@@ -139,8 +171,8 @@ export async function Tablero({ u, f }: { u: Usuario; f: FiltrosInd }) {
         </Card>
       )}
 
-      {interno && d.peps.length > 0 && (
-        <Card titulo="Presupuesto de PEP (interno)" className="mt-5" sinPadding>
+      {vista === 'presupuesto' && (
+        <Card titulo="Presupuesto de PEP (interno)" sinPadding>
           <Tabla>
             <thead><tr><Th>PEP</Th><Th className="text-right">Presupuesto</Th><Th className="text-right">Comprometido</Th><Th className="text-right">Consumido</Th><Th className="text-right">Disponible</Th><Th className="w-48">Uso</Th></tr></thead>
             <tbody className="divide-y divide-slate-100">

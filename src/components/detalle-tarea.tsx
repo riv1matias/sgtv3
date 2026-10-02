@@ -14,6 +14,7 @@ import { GaleriaDocumentos } from './documentos'
 import { LineaTiempo } from './linea-tiempo'
 import { BotonEnviar, Formulario } from './formulario'
 import { EtapasTarea, SiguientePaso } from './progreso'
+import { Icono } from './iconos'
 import { Aviso, Badge, Campo, Card, Dato, Encabezado, Input, Pesos, Pestanas, Select, Textarea, Vacio } from './ui'
 import { formatoFecha, formatoFechaHora, hace } from '@/lib/fechas'
 import { TIPOS_IMPUTACION, TIPOS_TRABAJO } from '@/lib/etiquetas'
@@ -37,6 +38,9 @@ export async function DetalleTarea({ id, u, tab = 'resumen', creada }: { id: str
   const tecnicos = !interno ? await getDb().select().from(s.usuarios).innerJoin(s.usuarioRoles, eq(s.usuarioRoles.usuarioId, s.usuarios.id))
     .where(and(eq(s.usuarios.contratistaId, u.contratistaId ?? -1), eq(s.usuarioRoles.rol, 'contratista_tecnico'))).orderBy(asc(s.usuarios.apellido)) : []
   const fotosSinUsar = d.bitacora.filter((b) => b.doc)
+  const abierta = !['CERTIFICADA', 'DESESTIMADA', 'CANCELADA'].includes(t.estado)
+  const puedeImputacion = interno && !!m && abierta && (t.solicitanteId === u.id || u.supervisados.includes(t.solicitanteId) || u.roles.includes('administracion'))
+  const puedeTipo = interno && abierta && !cambioTipo && (t.solicitanteId === u.id || u.supervisados.includes(t.solicitanteId))
 
   return (
     <>
@@ -107,10 +111,10 @@ export async function DetalleTarea({ id, u, tab = 'resumen', creada }: { id: str
               </Dato>
               <Dato label="Imputación">{d.imputacion ? `${TIPOS_IMPUTACION[d.imputacion.tipo]} ${d.imputacion.numero}` : <span className="text-red-600">Sin imputación</span>}<div className="text-xs text-slate-500">{d.imputacion?.descripcion}</div></Dato>
               <Dato label="Certificados previstos">{t.certificadosPrevistos}</Dato>
-              <Dato label="Fecha tentativa">{formatoFecha(t.fechaTentativa)}</Dato>
+              {t.fechaTentativa && <Dato label="Fecha tentativa">{formatoFecha(t.fechaTentativa)}</Dato>}
               <Dato label="Pedida">{formatoFechaHora(t.createdAt)} ({hace(t.createdAt)})</Dato>
               {interno && t.presupuesto && <Dato label="Presupuesto (interno)"><Pesos v={t.presupuesto} /></Dato>}
-              {Object.entries(extra).filter(([k]) => !['reasignacionPendiente', 'cambioTipoPendiente', 'tecnicoId'].includes(k)).map(([k, v]) => <Dato key={k} label={k}>{String(v)}</Dato>)}
+              {Object.entries(extra).filter(([k]) => !['reasignacionPendiente', 'cambioTipoPendiente', 'tecnicoId'].includes(k)).filter(([, v]) => v != null && v !== '').map(([k, v]) => <Dato key={k} label={ETIQUETAS_EXTRA[k] ?? k.charAt(0).toUpperCase() + k.slice(1)}>{String(v)}</Dato>)}
               {d.tecnico && <Dato label="Cuadrilla asignada">{d.tecnico.nombre} {d.tecnico.apellido}</Dato>}
             </dl>
             {t.descripcion && <div className="mt-4 whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{t.descripcion}</div>}
@@ -130,27 +134,36 @@ export async function DetalleTarea({ id, u, tab = 'resumen', creada }: { id: str
                 </ul>
               </Card>
             )}
-            {interno && (t.solicitanteId === u.id || u.supervisados.includes(t.solicitanteId) || u.roles.includes('administracion')) && m && !['CERTIFICADA', 'DESESTIMADA', 'CANCELADA'].includes(t.estado) && (
-              <Card titulo="Cambiar imputación">
-                <Formulario accion={accionCambiarImputacion} className="space-y-2">
-                  <input type="hidden" name="tareaId" value={t.id} />
-                  <Select name="imputacionId" defaultValue={t.imputacionId ?? ''}>
-                    {m.imputaciones.map((i) => <option key={i.id} value={i.id}>{TIPOS_IMPUTACION[i.tipo]} {i.numero} — {i.descripcion}</option>)}
-                  </Select>
-                  <Input name="motivo" placeholder="Motivo del cambio" required />
-                  <BotonEnviar chico estilo="secundario">Guardar</BotonEnviar>
-                </Formulario>
-              </Card>
-            )}
-            {interno && (t.solicitanteId === u.id || u.supervisados.includes(t.solicitanteId)) && !cambioTipo && !['CERTIFICADA', 'DESESTIMADA', 'CANCELADA'].includes(t.estado) && (
-              <Card titulo="Cambiar tipo de trabajo">
-                <Formulario accion={accionCambiarTipo} className="space-y-2">
-                  <input type="hidden" name="tareaId" value={t.id} />
-                  <Select name="tipoTrabajo" defaultValue={t.tipoTrabajo}>{Object.entries(TIPOS_TRABAJO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
-                  <Input name="motivo" placeholder="Motivo" required />
-                  <p className="text-xs text-slate-500">Si ya hay certificados, el contratista debe dar conformidad (cambia la lista de precios).</p>
-                  <BotonEnviar chico estilo="secundario">Cambiar</BotonEnviar>
-                </Formulario>
+            {(puedeImputacion || puedeTipo) && (
+              <Card titulo="Gestiones de la tarea">
+                <p className="-mt-1 mb-3 text-xs text-slate-500">Cambios que quedan registrados en el historial. Abrí la que necesites.</p>
+                <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                  {puedeImputacion && m && (
+                    <details className="group">
+                      <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Cambiar imputación <Icono nombre="chevron" className="text-slate-400 transition-transform group-open:rotate-180" /></summary>
+                      <Formulario accion={accionCambiarImputacion} className="space-y-2 px-3 pb-3">
+                        <input type="hidden" name="tareaId" value={t.id} />
+                        <Select name="imputacionId" defaultValue={t.imputacionId ?? ''}>
+                          {m.imputaciones.map((i) => <option key={i.id} value={i.id}>{TIPOS_IMPUTACION[i.tipo]} {i.numero} — {i.descripcion}</option>)}
+                        </Select>
+                        <Input name="motivo" placeholder="Motivo del cambio" required />
+                        <BotonEnviar chico estilo="secundario">Guardar</BotonEnviar>
+                      </Formulario>
+                    </details>
+                  )}
+                  {puedeTipo && (
+                    <details className="group">
+                      <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Cambiar tipo de trabajo <Icono nombre="chevron" className="text-slate-400 transition-transform group-open:rotate-180" /></summary>
+                      <Formulario accion={accionCambiarTipo} className="space-y-2 px-3 pb-3">
+                        <input type="hidden" name="tareaId" value={t.id} />
+                        <Select name="tipoTrabajo" defaultValue={t.tipoTrabajo}>{Object.entries(TIPOS_TRABAJO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
+                        <Input name="motivo" placeholder="Motivo" required />
+                        <p className="text-xs text-slate-500">Si ya hay certificados, el contratista debe dar conformidad (cambia la lista de precios).</p>
+                        <BotonEnviar chico estilo="secundario">Cambiar</BotonEnviar>
+                      </Formulario>
+                    </details>
+                  )}
+                </div>
               </Card>
             )}
             {!interno && u.roles.includes('contratista_responsable') && tecnicos.length > 0 && !['CERTIFICADA', 'DESESTIMADA', 'CANCELADA', 'ASIGNADA'].includes(t.estado) && (
@@ -245,3 +258,5 @@ export async function nombresUsuarios(ids: string[]) {
   return Object.fromEntries(f.map((x) => [x.id, `${x.nombre} ${x.apellido}`]))
 }
 
+
+const ETIQUETAS_EXTRA: Record<string, string> = { tipoRed: 'Tipo de red', proyecto: 'Proyecto', etapa: 'Etapa / ICD', nroActa: 'N° de acta', siniestro: 'N° de siniestro', ehs: 'EHS', grafo: 'Grafo' }

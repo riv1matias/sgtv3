@@ -4,7 +4,7 @@ import { getDb, schema as s } from '@/db'
 import { requerirUsuario } from '@/server/sesion'
 import { bandejaTareas, liquidacionesDe, listarCertificados } from '@/server/consultas'
 import { TablaCertificados, TablaTareas } from '@/components/filas'
-import { AyudaContextual, Card, Encabezado, Kpi, Pesos, Vacio } from '@/components/ui'
+import { AyudaContextual, Card, Encabezado, Kpi, LinkBoton, Pesos, Vacio } from '@/components/ui'
 import { formatoPesos } from '@/domain/dinero'
 
 export const metadata = { title: 'Mi bandeja' }
@@ -27,6 +27,7 @@ export default async function BandejaContratista() {
   const pendFactura = liqs.filter((l) => l.l.estado === 'pendiente_factura')
   const cambiosTipo = await getDb().select().from(s.tareas).where(and(eq(s.tareas.contratistaId, cid), sql`${s.tareas.datosExtra} ? 'cambioTipoPendiente'`))
   const sinCertificar = enCurso.filter((t) => t.acciones.length && ['EJECUTADA'].includes(t.estado))
+  const resto = enCurso.filter((t) => !sinCertificar.includes(t))
   void inArray
   return (
     <>
@@ -53,14 +54,19 @@ export default async function BandejaContratista() {
       )}
       {pendFactura.length > 0 && (
         <Card titulo="Liquidaciones listas para facturar" className="mb-5 border-amber-200">
-          <ul className="space-y-1 text-sm">{pendFactura.map((l) => <li key={l.l.id}><Link href={`/c/liquidaciones/${l.l.id}`} className="font-medium text-marca-700 hover:underline">{l.l.numero}</Link> · período {l.p.nombre} · total <Pesos v={l.l.total} /></li>)}</ul>
+          <ul className="divide-y divide-slate-100 text-sm">{pendFactura.map((l) => (
+            <li key={l.l.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+              <span><Link href={`/c/liquidaciones/${l.l.id}`} className="font-medium text-marca-700 hover:underline">{l.l.numero}</Link> <span className="text-slate-500">· período {l.p.nombre} · total</span> <b><Pesos v={l.l.total} /></b></span>
+              <LinkBoton href={`/c/liquidaciones/${l.l.id}`} estilo="primario" chico>Subir factura</LinkBoton>
+            </li>
+          ))}</ul>
         </Card>
       )}
       {corregir.filas.length > 0 && <Card titulo="Certificados observados o rebotados" className="mb-5" sinPadding><TablaCertificados filas={corregir.filas} portal="c" /></Card>}
       {porAceptar.length > 0 && <Card titulo={`Tareas por aceptar (${porAceptar.length})`} className="mb-5" sinPadding><TablaTareas filas={porAceptar} portal="c" conAcciones /></Card>}
       {borradores.filas.length > 0 && <Card titulo="Borradores sin emitir" className="mb-5" sinPadding><TablaCertificados filas={borradores.filas} portal="c" /></Card>}
-      {sinCertificar.length > 0 && <Card titulo="Tareas ejecutadas pendientes de certificar" className="mb-5 border-marca-200 ring-2 ring-marca-100" sinPadding acciones={<span className="text-xs text-marca-700">Entrá a la tarea y tocá <b>Certificar</b></span>}><TablaTareas filas={sinCertificar} portal="c" /></Card>}
-      <Card titulo={`Tareas en curso (${enCurso.length})`} sinPadding>{enCurso.length ? <TablaTareas filas={enCurso} portal="c" conAcciones /> : <Vacio icono="tareas">No hay tareas en curso. Cuando Personal te asigne una, vas a verla en “Tareas por aceptar”.</Vacio>}</Card>
+      {sinCertificar.length > 0 && <Card titulo="Tareas ejecutadas pendientes de certificar" className="mb-5 border-marca-200 ring-2 ring-marca-100" sinPadding acciones={<span className="text-xs text-marca-700">Entrá a la tarea y tocá <b>Certificar</b></span>}><TablaTareas filas={sinCertificar} portal="c" conAcciones /></Card>}
+      <Card titulo={`Otras tareas en curso (${resto.length})`} sinPadding>{resto.length ? <TablaTareas filas={resto} portal="c" conAcciones /> : <Vacio icono="tareas">No hay tareas en curso. Cuando Personal te asigne una, vas a verla en “Tareas por aceptar”.</Vacio>}</Card>
     </>
   )
 }

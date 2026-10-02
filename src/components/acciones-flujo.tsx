@@ -4,6 +4,7 @@ import { accionFlujoCertificado } from '@/app/acciones/certificados'
 import { accionFlujoTarea } from '@/app/acciones/tareas'
 import { BotonEnviar, Formulario } from './formulario'
 import { Campo, Input, Select, Textarea, clasesBoton } from './ui'
+import { Icono } from './iconos'
 import { MODOS } from '@/lib/etiquetas'
 import { hoy } from '@/lib/fechas'
 
@@ -28,9 +29,9 @@ export function AccionesFlujo({
   if (!acciones.length) return null
   const accion = entidad === 'tarea' ? accionFlujoTarea : accionFlujoCertificado
   const ordenadas = [...acciones].sort((a, b) => Number(b.transicion.estilo === 'primario') - Number(a.transicion.estilo === 'primario'))
-  return (
-    <div className="flex flex-wrap items-start gap-2">
-      {ordenadas.map((a) => {
+  const principales = ordenadas.filter((a) => !SECUNDARIAS.has(a.transicion.accion))
+  const secundarias = ordenadas.filter((a) => SECUNDARIAS.has(a.transicion.accion))
+  const dibujar = (a: AccionDisponible, enMenu = false) => {
         const t = a.transicion
         const req = t.requiere ?? []
         const motivos = t.motivos ? def.motivos?.[t.motivos] ?? [] : []
@@ -45,7 +46,12 @@ export function AccionesFlujo({
           </>
         )
         if (a.bloqueo) {
-          return <span key={t.accion + t.desde.join()} title={a.bloqueo} className={clsx(clasesBoton(estilo), 'cursor-not-allowed opacity-50')}>{t.etiqueta}</span>
+          return (
+            <span key={t.accion + t.desde.join()} className="inline-flex flex-col">
+              <span title={a.bloqueo} aria-disabled className={clsx(clasesBoton(estilo), 'cursor-not-allowed opacity-50')}>{t.etiqueta}</span>
+              <span className="mt-1 max-w-[16rem] text-[11px] leading-tight text-amber-700">{a.bloqueo}</span>
+            </span>
+          )
         }
         if (!necesitaForm) {
           return (
@@ -58,7 +64,7 @@ export function AccionesFlujo({
         return (
           <details key={t.accion + t.desde.join()} className="group w-full sm:w-auto">
             <summary className={clasesBoton(estilo)}>{t.etiqueta}{quien ? <span className="text-xs opacity-75"> ({quien})</span> : null} <span className="text-xs opacity-60 group-open:rotate-180">▾</span></summary>
-            <div className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-lg sm:w-[30rem]">
+            <div className={clsx('mt-2 w-full rounded-xl border border-slate-200 bg-white p-4', enMenu ? 'bg-slate-50' : 'shadow-lg sm:w-[30rem]')}>
               <Formulario accion={accion} className="space-y-3">
                 {ocultos}
                 {['reasignar', 'pedir_reasignacion'].includes(t.accion) && contratistas && (
@@ -108,7 +114,25 @@ export function AccionesFlujo({
             </div>
           </details>
         )
-      })}
+  }
+  return (
+    <div className="flex flex-wrap items-start gap-2">
+      {principales.map((a) => dibujar(a))}
+      {secundarias.length > 0 && (
+        <details className="group/menu relative">
+          <summary className={clasesBoton('fantasma')}>Más acciones <Icono nombre="chevron" className="h-3.5 w-3.5 transition-transform group-open/menu:rotate-180" /></summary>
+          <div className="absolute left-0 z-30 mt-2 w-[min(32rem,calc(100vw-2rem))] space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-xl sm:left-auto sm:right-0">
+            <p className="px-1 text-xs text-slate-500">Acciones para casos especiales. Todas quedan registradas en el historial.</p>
+            <div className="flex flex-col items-start gap-2">{secundarias.map((a) => dibujar(a, true))}</div>
+          </div>
+        </details>
+      )}
     </div>
   )
 }
+
+/** Acciones de excepción: se ofrecen en "Más acciones" para no competir con la decisión principal */
+const SECUNDARIAS = new Set([
+  'pedir_cierre', 'desestimar', 'cancelar', 'anular', 'poner_en_espera', 'pedir_reasignacion', 'reabrir',
+  'retirar', 'pedir_retiro', 'recuperar_aprobacion',
+])

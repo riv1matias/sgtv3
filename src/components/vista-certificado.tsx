@@ -67,6 +67,38 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
     const p = dif.prev.get(clave(f))
     return x === 'nuevo' ? <Badge color="green">Nuevo</Badge> : <Badge color="amber">Antes: {p?.item.importe ? `$ ${p.item.importe}` : formatoCantidad(p?.item.cantidad)}</Badge>
   }
+  const sapCard = (esAdminMateriales || d.consumos.length > 0) && interno ? (
+<Card titulo="Documentos SAP (consumo e ingreso de recuperados)" className={esAdminMateriales ? 'border-violet-200 ring-2 ring-violet-100' : undefined}>
+              {d.consumos.length > 0 && (
+                <ul className="mb-4 space-y-1 text-sm">
+                  {d.consumos.map((x) => (
+                    <li key={x.id} className="flex flex-wrap items-center gap-2">
+                      <Badge color={x.tipo === 'reversa' ? 'red' : 'violet'}>{x.tipo.replaceAll('_', ' ')}</Badge>
+                      <span className="font-mono">{x.numeroDocumento}</span> · {formatoFecha(x.fecha)} · versión {x.version}
+                      {x.documentoId && <a className="text-marca-700 underline" href={`/api/archivos/${x.documentoId}`}>archivo</a>}
+                      {!x.detalle && <span className="text-xs text-slate-400">(sin detalle comparable)</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {esAdminMateriales && (
+                <Formulario accion={accionDocumentoSap} className="grid gap-3 sm:grid-cols-4" reiniciar>
+                  <input type="hidden" name="certificadoId" value={c.id} />
+                  <Campo label="Tipo">
+                    <Select name="tipo">
+                      {mats.length > 0 && <option value="consumo">Consumo de materiales</option>}
+                      {recs.length > 0 && <option value="ingreso_recuperados">Ingreso de recuperados</option>}
+                      <option value="correccion">Corrección</option>
+                    </Select>
+                  </Campo>
+                  <Campo label="N° documento SAP"><Input name="numeroDocumento" required /></Campo>
+                  <Campo label="Fecha"><Input type="date" name="fecha" defaultValue={hoy()} required /></Campo>
+                  <Campo label="Archivo (Excel/CSV con código y cantidad)"><Input type="file" name="archivo" accept=".xlsx,.csv,.pdf" /></Campo>
+                  <div className="sm:col-span-4"><BotonEnviar estilo="secundario">Registrar y comparar</BotonEnviar></div>
+                </Formulario>
+              )}
+            </Card>
+  ) : null
   const observ = (f: Fila) => (obsPorItem.get(f.item.id) ?? []).map((o, i) => <div key={i} className="mt-1 rounded bg-red-50 px-2 py-1 text-xs text-red-800">Observado en {etiquetaPaso(o.paso)}: {o.comentario}</div>)
 
   return (
@@ -93,10 +125,10 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
       />
 
       <EtapasCertificado estado={c.estado} />
-      <SiguientePaso estado={c.estado} portal={portal} />
-      {(acciones.length > 0 || puedeTomar || puedeSoltar || c.tomadoPor) && (
-        <div className="no-print mb-5 space-y-3 rounded-2xl border border-marca-200 bg-marca-50/60 p-4">
-          {c.tomadoPor && <div className="text-sm text-slate-600">Lo está trabajando <b>{nombres[c.tomadoPor]}</b>.</div>}
+      {(acciones.length > 0 || puedeTomar || puedeSoltar) ? (
+        <SiguientePaso estado={c.estado} portal={portal}
+          extra={c.tomadoPor ? <p className="mt-1 text-sm text-slate-600">Lo está trabajando <b>{nombres[c.tomadoPor]}</b>.</p> : undefined}
+          pie={alertasAbiertas.length > 0 && acciones.some((a) => a.transicion.tipo === 'aprobacion') ? <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-800"><Icono nombre="alerta" className="h-3.5 w-3.5" /> Para aprobar, primero resolvé las alertas de abajo dejando constancia de lo verificado.</p> : undefined}>
           <div className="flex flex-wrap items-start gap-2">
             {puedeTomar && (
               <Formulario accion={accionTomar}><input type="hidden" name="certificadoId" value={c.id} /><BotonEnviar estilo="secundario">Tomar para trabajarlo</BotonEnviar></Formulario>
@@ -106,17 +138,19 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
             )}
             <AccionesFlujo entidad="certificado" id={c.id} lockVersion={c.lockVersion} def={def} acciones={acciones} items={itemsObservables} nombres={nombres} />
           </div>
-          {alertasAbiertas.length > 0 && acciones.some((a) => a.transicion.tipo === 'aprobacion') && <p className="text-xs text-amber-800">Para aprobar primero resolvé las alertas (dejá constancia de lo verificado).</p>}
-        </div>
+        </SiguientePaso>
+      ) : (
+        <SiguientePaso estado={c.estado} portal={portal} quien={c.tomadoPor ? <>Lo está trabajando <b>{nombres[c.tomadoPor]}</b>.</> : undefined} />
       )}
 
       {interno && d.alertas.length > 0 && (
-        <Card titulo={`Alertas (${alertasAbiertas.length} abiertas)`} className="mb-5 border-amber-200">
+        <Card titulo={alertasAbiertas.length ? `Alertas para revisar (${alertasAbiertas.length})` : 'Alertas'} className={alertasAbiertas.length ? 'mb-5 border-amber-200' : 'mb-5'}>
+          {!alertasAbiertas.length && <p className="text-sm text-slate-500">Todas las alertas están resueltas.</p>}
           <ul className="divide-y divide-slate-100">
-            {d.alertas.map((a) => (
+            {alertasAbiertas.map((a) => (
               <li key={a.id} className="py-2">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <Badge color={a.estado === 'abierta' ? 'amber' : 'green'}>{a.estado === 'abierta' ? '⚠ Abierta' : '✓ Resuelta'}</Badge>
+                  <Badge color="amber">Abierta</Badge>
                   <span>{a.mensaje}</span>
                   {a.version && a.version !== d.versionVista && <span className="text-xs text-slate-400">(versión {a.version})</span>}
                 </div>
@@ -131,6 +165,19 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
               </li>
             ))}
           </ul>
+          {d.alertas.length > alertasAbiertas.length && (
+            <details className="mt-2 text-sm">
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-marca-700">Ver alertas resueltas ({d.alertas.length - alertasAbiertas.length})</summary>
+              <ul className="mt-2 space-y-2">
+                {d.alertas.filter((a) => a.estado !== 'abierta').map((a) => (
+                  <li key={a.id} className="rounded-lg bg-slate-50 px-3 py-2">
+                    <div className="flex flex-wrap items-center gap-2"><Badge color="green">Resuelta</Badge><span className="text-slate-600">{a.mensaje}</span></div>
+                    {a.resolucion && <div className="mt-1 text-xs text-slate-500">{a.resolucion} · {formatoFechaHora(a.resueltaAt)}</div>}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </Card>
       )}
 
@@ -142,13 +189,14 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
 
       <div className="grid gap-5 xl:grid-cols-3">
         <div className="space-y-5 xl:col-span-2">
+          {esAdminMateriales && sapCard}
           <Card titulo="Carátula">
             <dl className="grid gap-4 sm:grid-cols-3">
               <Dato label="Tipo de trabajo">{TIPOS_TRABAJO[t.tipoTrabajo]}{t.subtipo ? ` · ${t.subtipo}` : ''}</Dato>
               <Dato label="Imputación">{imp ? `${imp.numero}` : '—'}</Dato>
               <Dato label="Período">{nombrePeriodo(c.periodo)}</Dato>
               <Dato label="Ejecución">{formatoFecha(c.fechaEjecDesde)} al {formatoFecha(c.fechaEjecHasta)}</Dato>
-              <Dato label="Centro / almacén">{c.centro ?? '—'} / {c.almacen ?? '—'}</Dato>
+              {mats.length + recs.length > 0 && <Dato label="Centro / almacén">{c.centro ?? '—'} / {c.almacen ?? '—'}</Dato>}
               <Dato label="Solicitante">{nombres[t.solicitanteId]}</Dato>
               <Dato label="Dirección" className="sm:col-span-2">{t.direccion}</Dato>
               <Dato label="Emitido">{formatoFechaHora(c.emitidoAt)}</Dato>
@@ -207,38 +255,7 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
             <GaleriaDocumentos docs={d.documentos} nuevos={d.documentosNuevos} />
           </Card>
 
-          {(esAdminMateriales || d.consumos.length > 0) && interno && (
-            <Card titulo="Documentos SAP (consumo e ingreso de recuperados)">
-              {d.consumos.length > 0 && (
-                <ul className="mb-4 space-y-1 text-sm">
-                  {d.consumos.map((x) => (
-                    <li key={x.id} className="flex flex-wrap items-center gap-2">
-                      <Badge color={x.tipo === 'reversa' ? 'red' : 'violet'}>{x.tipo.replaceAll('_', ' ')}</Badge>
-                      <span className="font-mono">{x.numeroDocumento}</span> · {formatoFecha(x.fecha)} · versión {x.version}
-                      {x.documentoId && <a className="text-marca-700 underline" href={`/api/archivos/${x.documentoId}`}>archivo</a>}
-                      {!x.detalle && <span className="text-xs text-slate-400">(sin detalle comparable)</span>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {esAdminMateriales && (
-                <Formulario accion={accionDocumentoSap} className="grid gap-3 sm:grid-cols-4" reiniciar>
-                  <input type="hidden" name="certificadoId" value={c.id} />
-                  <Campo label="Tipo">
-                    <Select name="tipo">
-                      {mats.length > 0 && <option value="consumo">Consumo de materiales</option>}
-                      {recs.length > 0 && <option value="ingreso_recuperados">Ingreso de recuperados</option>}
-                      <option value="correccion">Corrección</option>
-                    </Select>
-                  </Campo>
-                  <Campo label="N° documento SAP"><Input name="numeroDocumento" required /></Campo>
-                  <Campo label="Fecha"><Input type="date" name="fecha" defaultValue={hoy()} required /></Campo>
-                  <Campo label="Archivo (Excel/CSV con código y cantidad)"><Input type="file" name="archivo" accept=".xlsx,.csv,.pdf" /></Campo>
-                  <div className="sm:col-span-4"><BotonEnviar estilo="secundario">Registrar y comparar</BotonEnviar></div>
-                </Formulario>
-              )}
-            </Card>
-          )}
+          {!esAdminMateriales && sapCard}
         </div>
 
         <div className="space-y-5">
@@ -248,14 +265,14 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
               <div className="flex justify-between"><dt className="text-slate-500">IVA {par.iva_alicuota}%</dt><dd><Pesos v={tot.iva} /></dd></div>
               <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-semibold"><dt>Total</dt><dd><Pesos v={tot.total} /></dd></div>
             </dl>
-            <dl className="mt-4 space-y-1 border-t border-slate-100 pt-3 text-xs">
+            {(c.subtotalFinal || (c.subtotalEmision && c.subtotalActual !== c.subtotalEmision)) && <dl className="mt-4 space-y-1 border-t border-slate-100 pt-3 text-xs">
               <div className="flex justify-between"><dt className="text-slate-500">A la primera emisión</dt><dd><Pesos v={c.subtotalEmision} /></dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Actual</dt><dd><Pesos v={c.subtotalActual} /></dd></div>
               {c.subtotalFinal && <div className="flex justify-between font-medium"><dt>Final pagado (congelado)</dt><dd><Pesos v={c.subtotalFinal} /></dd></div>}
               {c.subtotalEmision && (c.subtotalFinal ?? c.subtotalActual) !== c.subtotalEmision && (
                 <div className="flex justify-between text-marca-700"><dt>Diferencia por actualización de LPU</dt><dd><Pesos v={String(Number(c.subtotalFinal ?? c.subtotalActual) - Number(c.subtotalEmision))} /></dd></div>
               )}
-            </dl>
+            </dl>}
             {d.revalorizaciones.length > 0 && (
               <ul className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
                 {d.revalorizaciones.map((r) => <li key={r.id}>{formatoFecha(r.createdAt)}: <Pesos v={r.subtotalAnterior} chico /> → <Pesos v={r.subtotalNuevo} chico /> · {r.motivo}</li>)}
@@ -284,7 +301,10 @@ export async function VistaCertificado({ id, u }: { id: string; u: Usuario }) {
           </Card>
 
           <Card titulo="Historial">
-            <LineaTiempo entidad="certificado" id={c.id} flujoId={c.flujoId} ocultarInternos={!interno} />
+            <details className="group">
+              <summary className="flex cursor-pointer items-center justify-between text-sm font-medium text-marca-700">Ver todo lo que pasó con este certificado <Icono nombre="chevron" className="transition-transform group-open:rotate-180" /></summary>
+              <div className="mt-4"><LineaTiempo entidad="certificado" id={c.id} flujoId={c.flujoId} ocultarInternos={!interno} /></div>
+            </details>
           </Card>
         </div>
       </div>

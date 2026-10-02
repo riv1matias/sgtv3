@@ -106,6 +106,7 @@ export function EditorCertificado(p: Props) {
   const [cab, setCab] = useState(p.cabecera)
   const [items, setItems] = useState<ItemEditor[]>(p.items)
   const [sucio, setSucio] = useState(false)
+  const [verRecuperados, setVerRecuperados] = useState(false)
   const [msg, setMsg] = useState<{ tono: 'ok' | 'error'; texto: string } | null>(null)
   const [pendiente, start] = useTransition()
   const [comentarioEmision, setComentarioEmision] = useState('')
@@ -193,23 +194,28 @@ export function EditorCertificado(p: Props) {
     </div>
   )
 
+  const hayMateriales = items.some((i) => i.tipo !== 'mo')
   return (
     <div className="space-y-5">
-      <Card titulo="Carátula">
+      <Card titulo="1. Carátula">
         <div className="grid gap-3 sm:grid-cols-3">
           <Campo label="Período de certificación"><Input type="month" value={cab.periodo} onChange={(e) => { setCab({ ...cab, periodo: e.target.value }); setSucio(true) }} /></Campo>
           <Campo label="Ejecución desde"><Input type="date" value={cab.fechaEjecDesde} onChange={(e) => { setCab({ ...cab, fechaEjecDesde: e.target.value }); setSucio(true) }} /></Campo>
           <Campo label="Ejecución hasta"><Input type="date" value={cab.fechaEjecHasta} onChange={(e) => { setCab({ ...cab, fechaEjecHasta: e.target.value }); setSucio(true) }} /></Campo>
-          <Campo label="Centro de consumo"><Input value={cab.centro} onChange={(e) => { setCab({ ...cab, centro: e.target.value }); setSucio(true) }} /></Campo>
-          <Campo label="Almacén de consumo"><Input value={cab.almacen} onChange={(e) => { setCab({ ...cab, almacen: e.target.value }); setSucio(true) }} /></Campo>
+          {hayMateriales && (
+            <>
+              <Campo label="Centro de consumo" ayuda="De dónde salieron los materiales"><Input value={cab.centro} onChange={(e) => { setCab({ ...cab, centro: e.target.value }); setSucio(true) }} /></Campo>
+              <Campo label="Almacén de consumo"><Input value={cab.almacen} onChange={(e) => { setCab({ ...cab, almacen: e.target.value }); setSucio(true) }} /></Campo>
+            </>
+          )}
           {p.mostrarEsFinal && (
             <label className="flex items-end gap-2 pb-2 text-sm"><input type="checkbox" checked={cab.esFinal} onChange={(e) => { setCab({ ...cab, esFinal: e.target.checked }); setSucio(true) }} /> Es el certificado final de la tarea</label>
           )}
-          <Campo label="Comentario sobre el trabajo realizado" className="sm:col-span-3"><Textarea value={cab.comentario} onChange={(e) => { setCab({ ...cab, comentario: e.target.value }); setSucio(true) }} /></Campo>
+          <Campo label="Comentario sobre el trabajo (opcional)" className="sm:col-span-3"><Textarea rows={2} placeholder="Algo que el solicitante deba saber al validar" value={cab.comentario} onChange={(e) => { setCab({ ...cab, comentario: e.target.value }); setSucio(true) }} /></Campo>
         </div>
       </Card>
 
-      <Card titulo={<>Mano de obra <span className="font-normal text-slate-400">({mo.length})</span></>}>
+      <Card titulo={<>2. Mano de obra <span className="font-normal text-slate-400">({mo.length})</span></>}>
         {rebote && <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">En un rebote solo se corrigen materiales: la mano de obra no se puede modificar.</p>}
         {!rebote && (
           <div className="mb-3">
@@ -272,8 +278,17 @@ export function EditorCertificado(p: Props) {
       <div className="grid gap-5 lg:grid-cols-2">
         {(['material', 'recuperado'] as const).map((tipo) => {
           const filas = items.filter((i) => i.tipo === tipo)
+          if (tipo === 'recuperado' && !filas.length && !verRecuperados) {
+            return (
+              <button key={tipo} type="button" onClick={() => setVerRecuperados(true)}
+                className="flex min-h-[7rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-200 bg-white/60 p-4 text-center text-sm text-slate-500 transition-colors hover:border-marca-300 hover:text-marca-700">
+                <span className="font-medium">+ 4. Agregar materiales recuperados</span>
+                <span className="text-xs">Solo si retiraste material de la red que vuelve al almacén</span>
+              </button>
+            )
+          }
           return (
-            <Card key={tipo} titulo={<>{tipo === 'material' ? 'Materiales utilizados' : 'Materiales recuperados'} <span className="font-normal text-slate-400">({filas.length}, opcional)</span></>}>
+            <Card key={tipo} titulo={<>{tipo === 'material' ? '3. Materiales utilizados' : '4. Materiales recuperados'} <span className="font-normal text-slate-400">({filas.length}, opcional)</span></>}>
               <Buscador<MaterialOpcion>
                 placeholder="Código SAP o descripción" url={(q) => `/api/materiales?q=${encodeURIComponent(q)}`}
                 render={(m) => <span><span className="font-mono text-xs text-slate-500">{m.codigoSap}</span> {m.descripcion} <span className="text-xs text-slate-400">({m.unidad})</span></span>}

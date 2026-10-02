@@ -5,7 +5,8 @@ import { ajustesPendientes, liquidacionesDe, maestros } from '@/server/consultas
 import { liquidacionCompleta, listarPeriodos } from '@/server/servicios/liquidaciones'
 import { accionAjuste, accionFacturaLiquidacion, accionPeriodo } from '@/app/acciones/gestion'
 import { BotonEnviar, Formulario } from './formulario'
-import { AyudaContextual, Aviso, Badge, Campo, Card, Encabezado, Input, Pesos, Select, Tabla, Td, Th, Vacio } from './ui'
+import { Icono } from './iconos'
+import { AyudaContextual, Aviso, Badge, Desplegable, Campo, Card, Encabezado, Input, Pesos, Select, Tabla, Td, Th, Vacio } from './ui'
 import { formatoFecha, formatoFechaHora, nombrePeriodo, periodoActual } from '@/lib/fechas'
 import { formatoPesos } from '@/domain/dinero'
 
@@ -28,8 +29,16 @@ export async function ListaLiquidaciones({ u, cerrado }: { u: Usuario; cerrado?:
       </AyudaContextual>
       {cerrado != null && <div className="mb-4"><Aviso tono="ok">Período cerrado: se generaron {cerrado} liquidación(es) con los precios congelados. Los contratistas fueron notificados para facturar.</Aviso></div>}
       {interno && (
-        <div className="mb-5 grid gap-5 lg:grid-cols-3">
-          <Card titulo="Períodos de pago" className="lg:col-span-2" sinPadding>
+        <div className="mb-5">
+          <Card titulo="Períodos de pago" sinPadding acciones={gestiona && (
+            <Desplegable texto={<><Icono nombre="mas" className="h-3.5 w-3.5" /> Nuevo período</>}>
+              <Formulario accion={accionPeriodo} className="space-y-3" reiniciar>
+                <Campo label="Período"><Input type="month" name="nombre" defaultValue={periodoActual()} required /></Campo>
+                <Campo label="Fecha de corte" ayuda="Define el precio si la política es “al cierre”"><Input type="date" name="fechaCorte" required /></Campo>
+                <BotonEnviar chico>Crear período</BotonEnviar>
+              </Formulario>
+            </Desplegable>
+          )}>
             {periodos.length ? (
               <Tabla>
                 <thead><tr><Th>Período</Th><Th>Fecha de corte</Th><Th>Estado</Th><Th /></tr></thead>
@@ -54,15 +63,6 @@ export async function ListaLiquidaciones({ u, cerrado }: { u: Usuario; cerrado?:
               </Tabla>
             ) : <Vacio>Sin períodos</Vacio>}
           </Card>
-          {gestiona && (
-            <Card titulo="Nuevo período">
-              <Formulario accion={accionPeriodo} className="space-y-3" reiniciar>
-                <Campo label="Período"><Input type="month" name="nombre" defaultValue={periodoActual()} required /></Campo>
-                <Campo label="Fecha de corte"><Input type="date" name="fechaCorte" required /></Campo>
-                <BotonEnviar chico>Crear período</BotonEnviar>
-              </Formulario>
-            </Card>
-          )}
         </div>
       )}
       <Card titulo="Liquidaciones" sinPadding className="mb-5">
@@ -85,8 +85,22 @@ export async function ListaLiquidaciones({ u, cerrado }: { u: Usuario; cerrado?:
           </Tabla>
         ) : <Vacio>Todavía no hay liquidaciones</Vacio>}
       </Card>
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card titulo="Ajustes pendientes (se aplican en la próxima liquidación)" className="lg:col-span-2" sinPadding>
+      <div>
+        <Card titulo="Ajustes pendientes" sinPadding acciones={gestiona && m && (
+          <Desplegable texto={<><Icono nombre="mas" className="h-3.5 w-3.5" /> Registrar ajuste</>} ancho="w-96">
+            <Formulario accion={accionAjuste} className="space-y-3" reiniciar>
+              <Campo label="Contratista"><Select name="contratistaId" required>{m.contratistas.map((c) => <option key={c.id} value={c.id}>{c.razonSocial}</option>)}</Select></Campo>
+              <div className="grid grid-cols-2 gap-2">
+                <Campo label="Tipo"><Select name="tipo"><option value="debito">Débito (descuento)</option><option value="credito">Crédito</option></Select></Campo>
+                <Campo label="Importe neto"><Input name="importe" inputMode="decimal" required /></Campo>
+              </div>
+              <Campo label="Motivo"><Input name="motivo" required placeholder="Ej.: trabajo mal ejecutado verificado después del pago" /></Campo>
+              <Campo label="Respaldo (opcional)"><Input type="file" name="archivo" /></Campo>
+              <BotonEnviar chico>Registrar</BotonEnviar>
+            </Formulario>
+          </Desplegable>
+        )}>
+          <p className="border-b border-slate-100 px-5 py-2 text-xs text-slate-500">Se aplican automáticamente en la próxima liquidación de cada empresa.</p>
           {ajustes.length ? (
             <Tabla>
               <thead><tr><Th>Fecha</Th>{interno && <Th>Contratista</Th>}<Th>Tipo</Th><Th>Motivo</Th><Th className="text-right">Importe</Th></tr></thead>
@@ -103,20 +117,6 @@ export async function ListaLiquidaciones({ u, cerrado }: { u: Usuario; cerrado?:
             </Tabla>
           ) : <Vacio>Sin ajustes pendientes</Vacio>}
         </Card>
-        {gestiona && m && (
-          <Card titulo="Registrar ajuste">
-            <Formulario accion={accionAjuste} className="space-y-3" reiniciar>
-              <Campo label="Contratista"><Select name="contratistaId" required>{m.contratistas.map((c) => <option key={c.id} value={c.id}>{c.razonSocial}</option>)}</Select></Campo>
-              <div className="grid grid-cols-2 gap-2">
-                <Campo label="Tipo"><Select name="tipo"><option value="debito">Débito (descuento)</option><option value="credito">Crédito</option></Select></Campo>
-                <Campo label="Importe neto"><Input name="importe" inputMode="decimal" required /></Campo>
-              </div>
-              <Campo label="Motivo"><Input name="motivo" required placeholder="Ej.: trabajo mal ejecutado verificado después del pago" /></Campo>
-              <Campo label="Nota / respaldo (opcional)"><Input type="file" name="archivo" /></Campo>
-              <BotonEnviar chico>Registrar</BotonEnviar>
-            </Formulario>
-          </Card>
-        )}
       </div>
     </>
   )

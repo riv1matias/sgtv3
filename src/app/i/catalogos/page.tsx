@@ -37,8 +37,8 @@ export default async function Catalogos({ searchParams }: { searchParams: Promis
       ]} />
 
       {tab === 'lpu' && (
-        <div className="grid gap-5 lg:grid-cols-3">
-          <Card titulo="Versiones de la LPU" className="lg:col-span-2" sinPadding>
+        <div className={puedeLpu ? 'grid gap-5 lg:grid-cols-3' : ''}>
+          <Card titulo="Versiones de la LPU" className={puedeLpu ? 'lg:col-span-2' : ''} sinPadding acciones={!puedeLpu && <span className="text-xs text-slate-500">La carga y publica Compras</span>}>
             <Tabla>
               <thead><tr><Th>Nombre</Th><Th>Vigencia desde</Th><Th>% informado</Th><Th>Estado</Th><Th>Cargada por</Th></tr></thead>
               <tbody className="divide-y divide-slate-100">
@@ -64,7 +64,7 @@ export default async function Catalogos({ searchParams }: { searchParams: Promis
                 <BotonEnviar>Analizar archivo</BotonEnviar>
               </Formulario>
             </Card>
-          ) : <Card><p className="text-sm text-slate-500">La LPU la carga y publica Compras.</p></Card>}
+          ) : null}
         </div>
       )}
 

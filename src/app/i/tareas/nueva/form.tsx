@@ -16,6 +16,7 @@ interface Props {
 export function FormNuevaTarea({ subregiones, contratistas, imputaciones }: Props) {
   const [estado, enviar] = useActionState(accionNuevaTarea, null)
   const [tipo, setTipo] = useState('mantenimiento')
+  const [subtipo, setSubtipo] = useState(SUBTIPOS.mantenimiento[0])
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
   const [subElegida, setSubElegida] = useState('')
@@ -43,13 +44,13 @@ export function FormNuevaTarea({ subregiones, contratistas, imputaciones }: Prop
         <Card titulo="1. Tipo de trabajo">
           <div className="grid gap-3 sm:grid-cols-3">
             <Campo label="Tipo">
-              <Select name="tipoTrabajo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+              <Select name="tipoTrabajo" value={tipo} onChange={(e) => { setTipo(e.target.value); setSubtipo(SUBTIPOS[e.target.value]?.[0] ?? '') }}>
                 {Object.entries(TIPOS_TRABAJO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </Select>
             </Campo>
             {SUBTIPOS[tipo]?.length > 0 && (
               <Campo label="Subtipo">
-                <Select name="subtipo">{SUBTIPOS[tipo].map((s) => <option key={s}>{s}</option>)}</Select>
+                <Select name="subtipo" value={subtipo} onChange={(e) => setSubtipo(e.target.value)}>{SUBTIPOS[tipo].map((s) => <option key={s}>{s}</option>)}</Select>
               </Campo>
             )}
             {tipo === 'mantenimiento' && (
@@ -58,12 +59,19 @@ export function FormNuevaTarea({ subregiones, contratistas, imputaciones }: Prop
               </Campo>
             )}
           </div>
-          {tipo === 'mantenimiento' && (
+          {tipo === 'mantenimiento' && subtipo === 'siniestro' && (
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <Campo label="N° de acta (opcional)"><Input name="nroActa" /></Campo>
-              <Campo label="N° de siniestro" ayuda="12 caracteres, solo si es siniestro"><Input name="siniestro" maxLength={12} /></Campo>
-              <Campo label="EHS (opcional)"><Input name="ehs" /></Campo>
+              <Campo label="N° de siniestro" ayuda="12 caracteres"><Input name="siniestro" maxLength={12} /></Campo>
             </div>
+          )}
+          {tipo === 'mantenimiento' && (
+            <details className="group mt-3">
+              <summary className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-slate-500 hover:text-marca-700">+ Datos adicionales (opcional): N° de acta, EHS</summary>
+              <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                <Campo label="N° de acta"><Input name="nroActa" /></Campo>
+                <Campo label="EHS"><Input name="ehs" /></Campo>
+              </div>
+            </details>
           )}
           {tipo === 'obra' && (
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -131,7 +139,7 @@ export function FormNuevaTarea({ subregiones, contratistas, imputaciones }: Prop
         </Card>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-5 lg:sticky lg:top-20 lg:self-start">
         <Card titulo="Imputación">
           <Campo label="Cómo se paga" ayuda="La podés cambiar hasta que Administración registre el consumo">
             <Select name="imputacionId" required defaultValue="">
@@ -141,10 +149,13 @@ export function FormNuevaTarea({ subregiones, contratistas, imputaciones }: Prop
           </Campo>
         </Card>
         <Card titulo="Urgencia">
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="urgencia" checked={urgencia} onChange={(e) => setUrgencia(e.target.checked)} /> Es una urgencia (pedida por teléfono/WhatsApp, se paga con diferencial)</label>
+          <label className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors ${urgencia ? 'border-red-200 bg-red-50 text-red-900' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+            <input type="checkbox" name="urgencia" checked={urgencia} onChange={(e) => setUrgencia(e.target.checked)} className="mt-0.5 h-4 w-4 accent-red-600" />
+            <span><b className="font-medium">Es una urgencia</b><span className="block text-xs opacity-75">Ya se pidió por teléfono o mensaje; se paga con diferencial.</span></span>
+          </label>
           {urgencia && <Textarea name="urgenciaJustificacion" required className="mt-2" placeholder="Justificación obligatoria: quién la pidió, por qué y cuándo" />}
         </Card>
-        <Card titulo="Planificación">
+        <Card titulo={tipo === 'obra' ? 'Planificación' : 'Planificación (opcional)'}>
           <div className="space-y-3">
             <Campo label="Certificados previstos" ayuda="Para obras por avances; se puede ampliar después"><Input type="number" name="certificadosPrevistos" min={1} defaultValue={1} /></Campo>
             <Campo label="Fecha tentativa (opcional)"><Input type="date" name="fechaTentativa" /></Campo>
